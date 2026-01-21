@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Auto Setup (Permalinks, Startseite, Cleanup, Elementor Container)
- * Description: Einmaliges Auto-Setup: löscht Standard-Beiträge/Seiten, erstellt eine statische „Startseite“ (Elementor Full Width), setzt Permalinks auf /%postname%/ und aktiviert den Elementor-Container. Deaktiviert sich nach erfolgreichem Container-Setup selbst.
- * Version: 1.0.0
+ * Plugin Name: Auto Setup (Cleanup von WP)
+ * Description: Löscht Standard-Beiträge/Seiten, erstellt eine statische „Startseite“ (Elementor Full Width), setzt Permalinks auf /%postname%/ und aktiviert den Elementor-Container. Deaktiviert sich nach erfolgreichem Container-Setup selbst.
+ * Version: 1.0.5
  * Author: Louis
  */
 
@@ -47,6 +47,67 @@ register_activation_hook(__FILE__, function () {
         $wp_rewrite->set_permalink_structure('/%postname%/');
         $wp_rewrite->flush_rules();
     }
+
+	// (d) Sichtbarkeit: Suchmaschinen davon abhalten, diese Website zu indexieren (Häkchen setzen)
+	update_option('blog_public', '0');
+
+	// (e) Themes bereinigen: nur Hello + Hello Child behalten
+	if ( ! function_exists('wp_get_themes') ) {
+		require_once ABSPATH . 'wp-includes/theme.php';
+	}
+	if ( ! function_exists('delete_theme') ) {
+		require_once ABSPATH . 'wp-admin/includes/theme.php';
+	}
+	if ( ! function_exists('switch_theme') ) {
+		require_once ABSPATH . 'wp-includes/theme.php';
+	}
+
+	$keep_stylesheets = ['hello-elementor','hello','hello-child','hello-elementor-child'];
+	$current_stylesheet = get_option('stylesheet');
+	$hello_preferred = wp_get_theme('hello-elementor');
+	$hello_fallback = wp_get_theme('hello');
+	$hello_available_stylesheet = '';
+	if ( $hello_preferred && $hello_preferred->exists() ) {
+		$hello_available_stylesheet = 'hello-elementor';
+	} elseif ( $hello_fallback && $hello_fallback->exists() ) {
+		$hello_available_stylesheet = 'hello';
+	}
+	if ( $hello_available_stylesheet && $current_stylesheet !== $hello_available_stylesheet ) {
+		// vor Löschen auf Hello umschalten, um aktives Theme nicht zu löschen
+		switch_theme($hello_available_stylesheet);
+		$current_stylesheet = $hello_available_stylesheet;
+	}
+
+	$themes = function_exists('wp_get_themes') ? wp_get_themes() : [];
+	foreach ( $themes as $stylesheet => $theme_obj ) {
+		$template = method_exists($theme_obj, 'get_template') ? $theme_obj->get_template() : '';
+		if ( in_array($stylesheet, $keep_stylesheets, true) || in_array($template, $keep_stylesheets, true) ) {
+			continue;
+		}
+		// aktives Theme nicht löschen
+		if ( $stylesheet === $current_stylesheet ) {
+			continue;
+		}
+		// Theme löschen
+		try { delete_theme($stylesheet); } catch ( \Throwable $e ) { /* ignore */ }
+	}
+
+	// (f) Plugins bereinigen: Hello Dolly + Akismet entfernen
+	if ( ! function_exists('get_plugins') ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+	if ( ! function_exists('delete_plugins') ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+	}
+	$targets = ['hello.php', 'akismet/akismet.php'];
+	$installed = function_exists('get_plugins') ? get_plugins() : [];
+	foreach ( $installed as $plugin_file => $data ) {
+		if ( in_array($plugin_file, $targets, true) ) {
+			// zuerst deaktivieren, dann löschen
+			try { deactivate_plugins($plugin_file, true); } catch ( \Throwable $e ) { /* ignore */ }
+			try { delete_plugins([ $plugin_file ]); } catch ( \Throwable $e ) { /* ignore */ }
+		}
+	}
 
     // Flags
     update_option(ASU_BASE_DONE,         1);
