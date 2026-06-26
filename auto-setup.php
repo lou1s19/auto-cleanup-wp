@@ -3,15 +3,21 @@
  * Plugin Name: Auto Cleanup WP
  * Description: Automatically removes the default WordPress post and page, creates a static "Home" page (Elementor Full Width), sets permalinks to /%postname%/, and enables Elementor Flexbox Containers. After successfully enabling the container feature, the plugin automatically deactivates itself.
  * WARNING: This plugin permanently deletes the default WordPress content (including the default post and page). Depending on your setup or modifications, existing content may also be affected. Use only on a fresh WordPress installation or after creating a full backup. This action cannot be undone.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Louis
  */
 
 if ( ! defined('ABSPATH') ) { exit; }
 
-define('ASU_BASE_DONE',                 'asu_base_done');
-define('ASU_CONTAINER_OK',              'asu_container_ok');
-define('ASU_CONTAINER_PENDING',         'asu_container_pending');
+if ( ! defined('ASU_BASE_DONE') ) {
+	define('ASU_BASE_DONE', 'asu_base_done');
+}
+if ( ! defined('ASU_CONTAINER_OK') ) {
+	define('ASU_CONTAINER_OK', 'asu_container_ok');
+}
+if ( ! defined('ASU_CONTAINER_PENDING') ) {
+	define('ASU_CONTAINER_PENDING', 'asu_container_pending');
+}
 
 /**
  * 1) Einmal-Setup beim Aktivieren: Cleanup, Startseite, Permalinks
@@ -52,28 +58,20 @@ register_activation_hook(__FILE__, function () {
 	// (d) Sichtbarkeit: Suchmaschinen davon abhalten, diese Website zu indexieren (Häkchen setzen)
 	update_option('blog_public', '0');
 
-	// (e) Themes bereinigen: nur Hello + Hello Child behalten
-	if ( ! function_exists('wp_get_themes') ) {
-		require_once ABSPATH . 'wp-includes/theme.php';
-	}
-	if ( ! function_exists('delete_theme') ) {
-		require_once ABSPATH . 'wp-admin/includes/theme.php';
-	}
-	if ( ! function_exists('switch_theme') ) {
-		require_once ABSPATH . 'wp-includes/theme.php';
-	}
+		// (e) Themes bereinigen: nur Hello + Hello Child behalten
+		asu_include_admin_theme_functions();
 
 	$keep_stylesheets = ['hello-elementor','hello','hello-child','hello-elementor-child'];
 	$current_stylesheet = get_option('stylesheet');
-	$hello_preferred = wp_get_theme('hello-elementor');
-	$hello_fallback = wp_get_theme('hello');
+		$hello_preferred = function_exists('wp_get_theme') ? wp_get_theme('hello-elementor') : null;
+		$hello_fallback = function_exists('wp_get_theme') ? wp_get_theme('hello') : null;
 	$hello_available_stylesheet = '';
 	if ( $hello_preferred && $hello_preferred->exists() ) {
 		$hello_available_stylesheet = 'hello-elementor';
 	} elseif ( $hello_fallback && $hello_fallback->exists() ) {
 		$hello_available_stylesheet = 'hello';
 	}
-	if ( $hello_available_stylesheet && $current_stylesheet !== $hello_available_stylesheet ) {
+		if ( $hello_available_stylesheet && $current_stylesheet !== $hello_available_stylesheet && function_exists('switch_theme') ) {
 		// vor Löschen auf Hello umschalten, um aktives Theme nicht zu löschen
 		switch_theme($hello_available_stylesheet);
 		$current_stylesheet = $hello_available_stylesheet;
@@ -90,25 +88,26 @@ register_activation_hook(__FILE__, function () {
 			continue;
 		}
 		// Theme löschen
-		try { delete_theme($stylesheet); } catch ( \Throwable $e ) { /* ignore */ }
-	}
-
-	// (f) Plugins bereinigen: Hello Dolly + Akismet entfernen
-	if ( ! function_exists('get_plugins') ) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	if ( ! function_exists('delete_plugins') ) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	$targets = ['hello.php', 'akismet/akismet.php'];
-	$installed = function_exists('get_plugins') ? get_plugins() : [];
-	foreach ( $installed as $plugin_file => $data ) {
-		if ( in_array($plugin_file, $targets, true) ) {
-			// zuerst deaktivieren, dann löschen
-			try { deactivate_plugins($plugin_file, true); } catch ( \Throwable $e ) { /* ignore */ }
-			try { delete_plugins([ $plugin_file ]); } catch ( \Throwable $e ) { /* ignore */ }
+			if ( function_exists('delete_theme') ) {
+				try { delete_theme($stylesheet); } catch ( \Exception $e ) { /* ignore */ }
+			}
 		}
-	}
+
+		// (f) Plugins bereinigen: Hello Dolly + Akismet entfernen
+		asu_include_admin_plugin_functions();
+		$targets = ['hello.php', 'akismet/akismet.php'];
+		$installed = function_exists('get_plugins') ? get_plugins() : [];
+		foreach ( $installed as $plugin_file => $data ) {
+			if ( in_array($plugin_file, $targets, true) ) {
+				// zuerst deaktivieren, dann löschen
+				if ( function_exists('deactivate_plugins') ) {
+					try { deactivate_plugins($plugin_file, true); } catch ( \Exception $e ) { /* ignore */ }
+				}
+				if ( function_exists('delete_plugins') ) {
+					try { delete_plugins([ $plugin_file ]); } catch ( \Exception $e ) { /* ignore */ }
+				}
+			}
+		}
 
     // Flags
     update_option(ASU_BASE_DONE,         1);
@@ -118,7 +117,8 @@ register_activation_hook(__FILE__, function () {
 /**
  * 2) Elementor: Container wirklich aktivieren (über API + Fallback)
  */
-function asu_is_container_active(): bool {
+if ( ! function_exists('asu_is_container_active') ) {
+function asu_is_container_active() {
     // zentrale Options-Struktur (neu/alt)
     $experiments = get_option('elementor_experimentation', []);
     if ( is_array($experiments) ) {
@@ -129,23 +129,35 @@ function asu_is_container_active(): bool {
     $single = get_option('elementor_experiment-container');
     return ($single === 'active');
 }
+}
 
-function asu_activate_container(): void {
+if ( ! function_exists('asu_activate_container') ) {
+function asu_activate_container() {
     // 1) Elementor-API
     if ( did_action('elementor/loaded') ) {
         try {
             // Neuer Weg über Plugin-Instanz
-            if ( class_exists('\Elementor\Plugin') && isset(\Elementor\Plugin::$instance->experiments) ) {
-                \Elementor\Plugin::$instance->experiments->set_feature_state('container', 'active');
-            }
-            // Alternativ: direkter Experiments-Manager
-            if ( class_exists('\Elementor\Core\Experiments\Manager') ) {
-                \Elementor\Core\Experiments\Manager::get_instance()->set_feature_state('container', 'active');
-            }
-        } catch (\Throwable $e) {
-            // Falls API nicht greift, übernimmt der Fallback unten
-        }
-    }
+            if (
+				class_exists('\Elementor\Plugin')
+					&& isset(\Elementor\Plugin::$instance->experiments)
+					&& is_callable([ \Elementor\Plugin::$instance->experiments, 'set_feature_state' ])
+			) {
+	                \Elementor\Plugin::$instance->experiments->set_feature_state('container', 'active');
+	            }
+	            // Alternativ: direkter Experiments-Manager
+	            if (
+					class_exists('\Elementor\Core\Experiments\Manager')
+						&& is_callable([ '\Elementor\Core\Experiments\Manager', 'get_instance' ])
+					) {
+						$experiments_manager = \Elementor\Core\Experiments\Manager::get_instance();
+						if ( $experiments_manager && is_callable([ $experiments_manager, 'set_feature_state' ]) ) {
+		                $experiments_manager->set_feature_state('container', 'active');
+					}
+	            }
+	        } catch (\Exception $e) {
+	            // Falls API nicht greift, übernimmt der Fallback unten
+	        }
+	    }
 
     // 2) Fallback: Optionen direkt setzen (versions-tolerant)
     $experiments = get_option('elementor_experimentation', []);
@@ -157,33 +169,75 @@ function asu_activate_container(): void {
     // Einzel-Option wie im <select name="elementor_experiment-container">
     update_option('elementor_experiment-container', 'active');
 }
+}
 
+if ( ! function_exists('asu_include_admin_plugin_functions') ) {
+function asu_include_admin_plugin_functions() {
+	if ( ! function_exists('deactivate_plugins') || ! function_exists('get_plugins') || ! function_exists('delete_plugins') ) {
+		$plugin_file = ABSPATH . 'wp-admin/includes/plugin.php';
+		if ( file_exists($plugin_file) ) {
+			require_once $plugin_file;
+		}
+	}
+}
+}
+
+if ( ! function_exists('asu_include_admin_theme_functions') ) {
+function asu_include_admin_theme_functions() {
+	if ( ! function_exists('wp_get_themes') || ! function_exists('switch_theme') ) {
+		$theme_file = ABSPATH . 'wp-includes/theme.php';
+		if ( file_exists($theme_file) ) {
+			require_once $theme_file;
+		}
+	}
+	if ( ! function_exists('delete_theme') ) {
+		$admin_theme_file = ABSPATH . 'wp-admin/includes/theme.php';
+		if ( file_exists($admin_theme_file) ) {
+			require_once $admin_theme_file;
+		}
+	}
+}
+}
+
+if ( ! function_exists('asu_maybe_finish_and_self_deactivate') ) {
 function asu_maybe_finish_and_self_deactivate() {
     if ( asu_is_container_active() ) {
         update_option(ASU_CONTAINER_OK, 1);
         delete_option(ASU_CONTAINER_PENDING);
 
         // Plugin selbst deaktivieren
-        if ( ! function_exists('deactivate_plugins') ) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-        deactivate_plugins(plugin_basename(__FILE__));
-    }
+		asu_include_admin_plugin_functions();
+		if ( function_exists('deactivate_plugins') ) {
+	        deactivate_plugins(plugin_basename(__FILE__));
+		}
+	    }
+	}
 }
 
 /**
  * 3) Hooks: so spät wie möglich nach Elementor + Fallbacks
  */
+if ( ! function_exists('asu_try_set_container') ) {
 function asu_try_set_container() {
     if ( get_option(ASU_CONTAINER_PENDING) && ! get_option(ASU_CONTAINER_OK) ) {
         asu_activate_container();
-        asu_maybe_finish_and_self_deactivate();
+        // Selbst-Deaktivierung NICHT hier aufrufen – zu früh (plugins_loaded/elementor/init)
+        // Wird stattdessen über admin_init erledigt, wenn alles geladen ist
     }
+}
 }
 add_action('elementor/init', 'asu_try_set_container', 999);
 add_action('plugins_loaded', 'asu_try_set_container', 999);
-add_action('admin_init', 'asu_try_set_container', 1);
 add_action('init', 'asu_try_set_container', 1);
+
+// Selbst-Deaktivierung erst bei admin_init: alle Plugins & Hooks sind vollständig geladen
+add_action('admin_init', function() {
+    if ( get_option(ASU_CONTAINER_PENDING) && ! get_option(ASU_CONTAINER_OK) ) {
+        asu_activate_container();
+    }
+    asu_maybe_finish_and_self_deactivate();
+}, 1);
+
 
 /**
  * Nachricht: alles geklappt
