@@ -1,7 +1,8 @@
 <?php
 /**
- * Plugin Name: Auto Setup (Cleanup von WP)
- * Description: Löscht Standard-Beiträge/Seiten, erstellt eine statische „Startseite“ (Elementor Full Width), setzt Permalinks auf /%postname%/ und aktiviert den Elementor-Container. Deaktiviert sich nach erfolgreichem Container-Setup selbst.
+ * Plugin Name: Auto Cleanup WP
+ * Description: Automatically removes the default WordPress post and page, creates a static "Home" page (Elementor Full Width), sets permalinks to /%postname%/, and enables Elementor Flexbox Containers. After successfully enabling the container feature, the plugin automatically deactivates itself.
+ * WARNING: This plugin permanently deletes the default WordPress content (including the default post and page). Depending on your setup or modifications, existing content may also be affected. Use only on a fresh WordPress installation or after creating a full backup. This action cannot be undone.
  * Version: 1.0.5
  * Author: Louis
  */
