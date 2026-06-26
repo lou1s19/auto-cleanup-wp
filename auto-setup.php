@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Auto Cleanup WP
- * Description: Automatically removes the default WordPress post and page, creates a static "Home" page (Elementor Full Width), sets permalinks to /%postname%/, and enables Elementor Flexbox Containers. After successfully enabling the container feature, the plugin automatically deactivates itself.
+ * Description: Automatically removes the default WordPress post and page, creates a static "Home" page (Elementor Full Width), creates Elementor Pro Theme Builder header/footer templates, sets permalinks to /%postname%/, and enables Elementor Flexbox Containers. After successfully enabling the container feature, the plugin automatically deactivates itself.
  * WARNING: This plugin permanently deletes the default WordPress content (including the default post and page). Depending on your setup or modifications, existing content may also be affected. Use only on a fresh WordPress installation or after creating a full backup. This action cannot be undone.
  * Version: 1.0.6
  * Author: Louis
@@ -17,6 +17,12 @@ if ( ! defined('ASU_CONTAINER_OK') ) {
 }
 if ( ! defined('ASU_CONTAINER_PENDING') ) {
 	define('ASU_CONTAINER_PENDING', 'asu_container_pending');
+}
+if ( ! defined('ASU_THEME_BUILDER_DONE') ) {
+	define('ASU_THEME_BUILDER_DONE', 'asu_theme_builder_done');
+}
+if ( ! defined('ASU_THEME_BUILDER_SKIPPED') ) {
+	define('ASU_THEME_BUILDER_SKIPPED', 'asu_theme_builder_skipped');
 }
 
 /**
@@ -109,6 +115,9 @@ register_activation_hook(__FILE__, function () {
 			}
 		}
 
+	// (g) Elementor Pro Theme Builder: Header + Footer erstellen und auf Entire Site setzen
+	asu_create_theme_builder_header_footer();
+
     // Flags
     update_option(ASU_BASE_DONE,         1);
     update_option(ASU_CONTAINER_PENDING, 1);
@@ -199,6 +208,173 @@ function asu_include_admin_theme_functions() {
 }
 }
 
+if ( ! function_exists('asu_is_elementor_pro_active') ) {
+function asu_is_elementor_pro_active() {
+	return defined('ELEMENTOR_PRO_VERSION') || class_exists('\ElementorPro\Plugin');
+}
+}
+
+if ( ! function_exists('asu_elementor_element_id') ) {
+function asu_elementor_element_id() {
+	return substr(md5(wp_rand() . microtime()), 0, 7);
+}
+}
+
+if ( ! function_exists('asu_get_existing_theme_builder_template') ) {
+function asu_get_existing_theme_builder_template($type) {
+	$templates = get_posts([
+		'post_type'      => 'elementor_library',
+		'post_status'    => ['publish','draft','pending','future','private'],
+		'posts_per_page' => 1,
+		'fields'         => 'ids',
+		'meta_query'     => [
+			[
+				'key'   => '_elementor_template_type',
+				'value' => $type,
+			],
+		],
+	]);
+
+	return ! empty($templates) ? (int) $templates[0] : 0;
+}
+}
+
+if ( ! function_exists('asu_get_theme_builder_template_data') ) {
+function asu_get_theme_builder_template_data($type) {
+	if ( $type === 'header' ) {
+		return [
+			[
+				'id'       => asu_elementor_element_id(),
+				'elType'   => 'container',
+				'settings' => [
+					'content_width'      => 'boxed',
+					'flex_direction'     => 'row',
+					'justify_content'    => 'space-between',
+					'align_items'        => 'center',
+					'padding'            => [
+						'unit'     => 'px',
+						'top'      => '20',
+						'right'    => '20',
+						'bottom'   => '20',
+						'left'     => '20',
+						'isLinked' => false,
+					],
+					'background_background' => 'classic',
+					'background_color'      => '#ffffff',
+				],
+				'elements' => [
+					[
+						'id'         => asu_elementor_element_id(),
+						'elType'     => 'widget',
+						'widgetType' => 'heading',
+						'settings'   => [
+							'title'       => get_bloginfo('name') ?: 'Website',
+							'header_size' => 'div',
+						],
+						'elements'   => [],
+					],
+					[
+						'id'         => asu_elementor_element_id(),
+						'elType'     => 'widget',
+						'widgetType' => 'text-editor',
+						'settings'   => [
+							'editor' => 'Navigation hier bearbeiten',
+						],
+						'elements'   => [],
+					],
+				],
+			],
+		];
+	}
+
+	return [
+		[
+			'id'       => asu_elementor_element_id(),
+			'elType'   => 'container',
+			'settings' => [
+				'content_width'          => 'boxed',
+				'flex_direction'         => 'column',
+				'justify_content'        => 'center',
+				'align_items'            => 'center',
+				'padding'                => [
+					'unit'     => 'px',
+					'top'      => '36',
+					'right'    => '20',
+					'bottom'   => '36',
+					'left'     => '20',
+					'isLinked' => false,
+				],
+				'background_background'  => 'classic',
+				'background_color'       => '#111111',
+			],
+			'elements' => [
+				[
+					'id'         => asu_elementor_element_id(),
+					'elType'     => 'widget',
+					'widgetType' => 'text-editor',
+					'settings'   => [
+						'editor' => '(c) ' . date('Y') . ' ' . (get_bloginfo('name') ?: 'Website') . ' - Footer hier bearbeiten',
+					],
+					'elements'   => [],
+				],
+			],
+		],
+	];
+}
+}
+
+if ( ! function_exists('asu_create_theme_builder_template') ) {
+function asu_create_theme_builder_template($type, $title) {
+	$template_id = asu_get_existing_theme_builder_template($type);
+	if ( ! $template_id ) {
+		$template_id = wp_insert_post([
+			'post_title'  => $title,
+			'post_status' => 'publish',
+			'post_type'   => 'elementor_library',
+		]);
+	}
+
+	if ( ! $template_id || is_wp_error($template_id) ) {
+		return 0;
+	}
+
+	update_post_meta($template_id, '_elementor_edit_mode', 'builder');
+	update_post_meta($template_id, '_elementor_template_type', $type);
+	update_post_meta($template_id, '_elementor_location', $type);
+	update_post_meta($template_id, '_elementor_data', wp_slash(wp_json_encode(asu_get_theme_builder_template_data($type))));
+	update_post_meta($template_id, '_elementor_page_settings', []);
+
+	// Elementor Pro Theme Builder condition: display on the entire site.
+	update_post_meta($template_id, '_elementor_conditions', ['include/general']);
+
+	if ( defined('ELEMENTOR_VERSION') ) {
+		update_post_meta($template_id, '_elementor_version', ELEMENTOR_VERSION);
+	}
+
+	return (int) $template_id;
+}
+}
+
+if ( ! function_exists('asu_create_theme_builder_header_footer') ) {
+function asu_create_theme_builder_header_footer() {
+	if ( ! asu_is_elementor_pro_active() ) {
+		update_option(ASU_THEME_BUILDER_SKIPPED, 1);
+		return;
+	}
+
+	$header_id = asu_create_theme_builder_template('header', 'Global Header');
+	$footer_id = asu_create_theme_builder_template('footer', 'Global Footer');
+
+	if ( $header_id && $footer_id ) {
+		update_option(ASU_THEME_BUILDER_DONE, [
+			'header_id' => $header_id,
+			'footer_id' => $footer_id,
+		]);
+		delete_option(ASU_THEME_BUILDER_SKIPPED);
+	}
+}
+}
+
 if ( ! function_exists('asu_maybe_finish_and_self_deactivate') ) {
 function asu_maybe_finish_and_self_deactivate() {
     if ( asu_is_container_active() ) {
@@ -245,8 +421,14 @@ add_action('admin_init', function() {
 add_action('admin_notices', function () {
     if ( current_user_can('manage_options') && get_option(ASU_CONTAINER_OK) ) {
         echo '<div class="notice notice-success is-dismissible">
-                <p><strong>Auto Setup:</strong> Setup abgeschlossen – Container ist aktiv, Permalinks und Startseite gesetzt.</p>
+                <p><strong>Auto Setup:</strong> Setup abgeschlossen – Container ist aktiv, Permalinks, Startseite und Theme-Builder-Templates sind gesetzt.</p>
               </div>';
         delete_option(ASU_CONTAINER_OK);
     }
+	if ( current_user_can('manage_options') && get_option(ASU_THEME_BUILDER_SKIPPED) ) {
+		echo '<div class="notice notice-warning is-dismissible">
+				<p><strong>Auto Setup:</strong> Elementor Pro war nicht aktiv. Header und Footer wurden deshalb nicht im Theme Builder erstellt.</p>
+			  </div>';
+		delete_option(ASU_THEME_BUILDER_SKIPPED);
+	}
 });
