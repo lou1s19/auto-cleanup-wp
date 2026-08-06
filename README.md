@@ -1,8 +1,6 @@
 # Auto Cleanup WP
 
-Ein WordPress-Plugin, das eine frische Installation in einem Rutsch einrichtet: Standard-Inhalte raus, Startseite rein, Elementor vorbereitet. Danach schaltet es sich selbst ab.
-
-Gedacht für den immer gleichen Handgriff am Anfang eines Projekts. Statt zwanzig Klicks durch das WordPress-Backend einmal aktivieren und weiterarbeiten.
+Räumt eine frische WordPress-Installation auf und richtet sie für Elementor ein. Einmal aktivieren statt zwanzig Klicks durchs Backend. Danach schaltet sich das Plugin selbst ab.
 
 > ## Achtung, das Plugin löscht endgültig
 >
