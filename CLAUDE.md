@@ -3,7 +3,7 @@
 WordPress-Plugin, das eine frische Installation einrichtet und sich danach selbst deaktiviert. Siehe `README.md` für den vollständigen Funktionsumfang.
 
 - **Stack:** PHP, WordPress-Plugin-API. Keine Build-Tools, keine Abhängigkeiten, kein Composer, kein npm.
-- **Zielumgebung:** WordPress 6.x mit Hello Elementor, Elementor und Elementor Pro.
+- **Zielumgebung:** WordPress 6.x mit Hello Elementor und Elementor. Elementor Pro wird nicht vorausgesetzt.
 - **Testen:** Plugin nach `/wp-content/plugins/` kopieren und auf einer frischen lokalen WordPress aktivieren. Es gibt keine automatisierten Tests.
 - **Syntaxprüfung:** `php -l auto-setup.php && for f in includes/*.php; do php -l "$f"; done`
 
@@ -19,4 +19,4 @@ WordPress-Plugin, das eine frische Installation einrichtet und sich danach selbs
 - **Options-Namen nur über `ASU_Options`-Konstanten**, nie als Zeichenkette im Code. Bestehende Namen nicht ändern, sonst verliert ein bereits aktiviertes Plugin seinen Zustand.
 - **Kommentare auf Deutsch**, wie im restlichen Code.
 - **Das Plugin löscht endgültig.** Jede Änderung an `ASU_Cleanup` sehr genau prüfen und nur auf einer Wegwerf-Installation testen.
-- Bei Änderungen an den Elementor-Templates: Elementor speichert Inhalte als JSON in der Meta `_elementor_data`, nicht als HTML. Struktur ist `container` > `widget`.
+- Das automatische Anlegen von Theme-Builder-Templates wurde bewusst entfernt (siehe CHANGELOG). Nicht ohne Not wieder einbauen. Der alte Code steht in Commit 8df7c15.

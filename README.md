@@ -20,29 +20,28 @@ Beim Aktivieren, in dieser Reihenfolge:
 4. **Setzt das Häkchen "Suchmaschinen davon abhalten, diese Website zu indexieren".** Sinnvoll, solange die Seite im Bau ist. Vor dem Livegang unbedingt wieder entfernen.
 5. **Löscht alle Themes außer Hello Elementor.** Ist gerade ein anderes Theme aktiv, wird vorher auf Hello Elementor umgeschaltet, damit das aktive Theme nicht gelöscht wird.
 6. **Löscht Hello Dolly und Akismet.**
-7. **Legt im Elementor Pro Theme Builder je ein Template für Header und Footer an**, beide auf "gesamte Website" gestellt, mit einer einfachen Startstruktur zum Weiterbauen. Ohne Elementor Pro wird dieser Schritt übersprungen und es erscheint ein Hinweis im Backend.
 
 Danach, sobald Elementor vollständig geladen ist:
 
-8. **Aktiviert die Elementor Flexbox Container.**
-9. **Deaktiviert sich selbst**, sobald Schritt 8 bestätigt geklappt hat. Man sieht dann eine grüne Erfolgsmeldung im Backend.
+7. **Aktiviert die Elementor Flexbox Container.**
+8. **Deaktiviert sich selbst**, sobald Schritt 7 bestätigt geklappt hat. Man sieht dann eine grüne Erfolgsmeldung im Backend.
+
+Header und Footer legt das Plugin **nicht** an. Das macht man von Hand im Elementor Theme Builder.
 
 ## Voraussetzungen
 
 - WordPress 6.x oder neuer
 - Theme **Hello Elementor**
 - **Elementor**
-- **Elementor Pro** für die Header- und Footer-Templates. Ohne Pro läuft der Rest trotzdem durch.
 
 ## Empfohlene Reihenfolge
 
-Elementor sollte vor diesem Plugin installiert sein, sonst kann der Container nicht aktiviert und der Theme Builder nicht befüllt werden.
+Elementor sollte vor diesem Plugin installiert sein, sonst kann der Container nicht aktiviert werden.
 
 1. WordPress installieren
 2. Theme **Hello Elementor** installieren und aktivieren
 3. **Elementor** installieren und aktivieren
-4. **Elementor Pro** installieren und aktivieren
-5. **Auto Cleanup WP** aktivieren
+4. **Auto Cleanup WP** aktivieren
 
 ## Installation
 
@@ -50,14 +49,6 @@ Elementor sollte vor diesem Plugin installiert sein, sonst kann der Container ni
 2. Ordner nach `/wp-content/plugins/` kopieren.
 3. Im Backend unter *Plugins* aktivieren.
 4. Das Setup läuft sofort los. Nach kurzer Zeit erscheint die Erfolgsmeldung und das Plugin steht wieder auf inaktiv.
-
-## Danach: Header und Footer bearbeiten
-
-1. Im Backend auf **Templates > Theme Builder**.
-2. **Global Header** und **Global Footer** öffnen und in Elementor bearbeiten.
-3. Prüfen, dass bei beiden die Anzeigebedingung **Gesamte Website** steht.
-
-Die Templates enthalten nur ein Grundgerüst: im Header der Seitenname und ein Platzhalter für die Navigation, im Footer eine Copyright-Zeile. Das ist als Startpunkt gedacht, nicht als fertiges Design.
 
 ## Aufbau des Codes
 
@@ -70,7 +61,6 @@ includes/
   class-asu-cleanup.php               löscht Inhalte, Themes und Plugins
   class-asu-site-setup.php            Startseite, Permalinks, Sichtbarkeit
   class-asu-elementor-container.php   schaltet die Elementor Flexbox Container ein
-  class-asu-theme-builder.php         legt Header- und Footer-Template an
   class-asu-admin-notices.php         Meldungen im Backend
   class-asu-options.php               Namen der gespeicherten Optionen
   class-asu-wp-admin.php              lädt WordPress-Funktionen nach, die beim Aktivieren fehlen

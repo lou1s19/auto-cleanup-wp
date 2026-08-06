@@ -18,10 +18,4 @@ class ASU_Options {
 
 	/** Elementor-Container soll noch aktiviert werden. */
 	const CONTAINER_PENDING = 'asu_container_pending';
-
-	/** Header- und Footer-Template wurden angelegt (speichert die IDs). */
-	const THEME_BUILDER_DONE = 'asu_theme_builder_done';
-
-	/** Theme Builder wurde übersprungen, weil Elementor Pro fehlte. */
-	const THEME_BUILDER_SKIPPED = 'asu_theme_builder_skipped';
 }

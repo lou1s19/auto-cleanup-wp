@@ -2,6 +2,12 @@
 
 Neueste Einträge oben.
 
+## 2026-08-06 – Theme Builder entfernt (Version 1.2.0)
+
+- Die Erstellung der Header- und Footer-Templates im Elementor Pro Theme Builder wurde entfernt, weil sie in der Praxis nicht funktioniert hat. Header und Footer werden wieder von Hand angelegt.
+- Entfallen: `ASU_Theme_Builder`, die Optionen `asu_theme_builder_done` und `asu_theme_builder_skipped`, die Warnmeldung "Elementor Pro war nicht aktiv", die Elementor-Pro-Voraussetzung in der README.
+- Wahrscheinliche Ursache des Problems, falls es später doch gebraucht wird: Elementor Pro liest die Anzeigebedingungen nicht nur aus der Post-Meta `_elementor_conditions`, sondern hält sie zusätzlich in einem eigenen Zwischenspeicher. Wer nur die Meta schreibt, taucht dort nicht auf, das Template greift also nicht. Der alte Code steht im Git-Verlauf, Commit 8df7c15.
+
 ## 2026-08-06 – Umbau auf Klassen, eine Datei pro Aufgabe (Version 1.1.0)
 
 - Die bisherige Einzeldatei `auto-setup.php` (434 Zeilen, rein prozedural) wurde in acht Klassen unter `includes/` aufgeteilt. `auto-setup.php` ist jetzt nur noch Startdatei: Plugin-Header, Klassen laden, Plugin starten.
