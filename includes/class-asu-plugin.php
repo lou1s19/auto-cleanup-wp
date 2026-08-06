@@ -1,104 +1,89 @@
 <?php
 /**
- * Die Hauptklasse. Sie enthält selbst keine Logik, sondern steuert nur den Ablauf:
- * sie meldet die WordPress-Hooks an und ruft in der richtigen Reihenfolge
- * die zuständigen Klassen auf.
+ * Der Ablauf des Plugins. Hier steht, was wann passiert.
+ * Die eigentliche Arbeit machen die drei anderen Klassen.
  */
 
 if ( ! defined('ABSPATH') ) { exit; }
 
 class ASU_Plugin {
 
-	/** @var ASU_Cleanup */
+	/** Notiz in der Datenbank: Setup ist gelaufen, das Plugin darf sich abschalten. */
+	const SETUP_DONE = 'asu_setup_done';
+
 	private $cleanup;
-
-	/** @var ASU_Site_Setup */
 	private $site_setup;
-
-	/** @var ASU_Elementor_Container */
-	private $container;
-
-	/** @var ASU_Admin_Notices */
-	private $notices;
+	private $elementor;
 
 	public function __construct() {
 		$this->cleanup    = new ASU_Cleanup();
 		$this->site_setup = new ASU_Site_Setup();
-		$this->container  = new ASU_Elementor_Container();
-		$this->notices    = new ASU_Admin_Notices();
+		$this->elementor  = new ASU_Elementor();
 	}
 
 	/**
-	 * Meldet alle Hooks bei WordPress an.
-	 * Ein Hook ist ein Zeitpunkt, an dem WordPress unsere Funktion aufruft.
+	 * Sagt WordPress, wann es uns aufrufen soll.
 	 */
 	public function register() {
-		// Läuft genau einmal: beim Aktivieren des Plugins.
+		// Einmalig, beim Klick auf "Aktivieren".
 		register_activation_hook(ASU_PLUGIN_FILE, [ $this, 'run_setup' ]);
 
-		// Elementor ist nicht bei jedem Ladevorgang gleich früh da.
-		// Deshalb wird an drei Stellen versucht, den Container zu aktivieren.
-		add_action('elementor/init', [ $this, 'ensure_container_active' ], 999);
-		add_action('plugins_loaded', [ $this, 'ensure_container_active' ], 999);
-		add_action('init', [ $this, 'ensure_container_active' ], 1);
-
-		// Im Adminbereich ist alles vollständig geladen. Erst hier wird geprüft,
-		// ob es geklappt hat, und das Plugin schaltet sich selbst ab.
-		add_action('admin_init', [ $this, 'finish_setup' ], 1);
-
-		add_action('admin_notices', [ $this->notices, 'render' ]);
+		// Beim nächsten Aufruf einer Backend-Seite.
+		add_action('admin_init', [ $this, 'finish' ]);
 	}
 
 	/**
-	 * Das einmalige Setup beim Aktivieren.
-	 * Reihenfolge ist wichtig: erst aufräumen, dann neu aufbauen.
+	 * Das komplette Setup. Läuft einmal, von oben nach unten.
 	 */
 	public function run_setup() {
-		// 1. Alte Inhalte weg.
 		$this->cleanup->delete_all_posts_and_pages();
 
-		// 2. Grundeinstellungen setzen.
 		$this->site_setup->create_static_home_page();
 		$this->site_setup->set_permalink_structure();
 		$this->site_setup->discourage_search_engines();
 
-		// 3. Überflüssige Themes und Plugins entfernen.
 		$this->cleanup->remove_unused_themes();
 		$this->cleanup->remove_unused_plugins();
 
-		// Merken: Grund-Setup fertig, Container steht noch aus.
-		update_option(ASU_Options::BASE_DONE, 1);
-		update_option(ASU_Options::CONTAINER_PENDING, 1);
+		$this->elementor->enable_containers();
+
+		// Notiz hinterlassen. Sie ist das Einzige, was diesen Seitenaufruf überlebt.
+		update_option(self::SETUP_DONE, 1);
 	}
 
 	/**
-	 * Versucht, den Elementor-Container zu aktivieren, solange das noch offen ist.
+	 * Aufräumen nach dem Setup: Erfolgsmeldung zeigen, Plugin abschalten.
+	 *
+	 * Warum nicht direkt oben in run_setup()? Weil ein Plugin sich nicht selbst
+	 * abschalten kann, während WordPress es gerade einschaltet. Deshalb der Umweg
+	 * über die Notiz und den nächsten Seitenaufruf.
 	 */
-	public function ensure_container_active() {
-		if ( ! get_option(ASU_Options::CONTAINER_PENDING) || get_option(ASU_Options::CONTAINER_OK) ) {
+	public function finish() {
+		if ( ! get_option(self::SETUP_DONE) ) {
 			return;
 		}
 
-		$this->container->activate();
-	}
+		delete_option(self::SETUP_DONE);
 
-	/**
-	 * Läuft im Adminbereich: letzter Aktivierungsversuch, danach Erfolgskontrolle.
-	 * Hat es geklappt, deaktiviert sich das Plugin selbst.
-	 */
-	public function finish_setup() {
-		$this->ensure_container_active();
-
-		if ( ! $this->container->is_active() ) {
-			return;
-		}
-
-		update_option(ASU_Options::CONTAINER_OK, 1);
-		delete_option(ASU_Options::CONTAINER_PENDING);
-
-		ASU_Wp_Admin::load_plugin_functions();
 		if ( function_exists('deactivate_plugins') ) {
 			deactivate_plugins(plugin_basename(ASU_PLUGIN_FILE));
 		}
+
+		// Die Meldung kommt später im selben Seitenaufruf.
+		add_action('admin_notices', [ $this, 'show_success' ]);
+	}
+
+	/**
+	 * Grüne Meldung im Backend. Ohne sie sähe es aus, als hätte das Aktivieren
+	 * nicht funktioniert, weil das Plugin danach wieder auf "inaktiv" steht.
+	 */
+	public function show_success() {
+		if ( ! current_user_can('manage_options') ) {
+			return;
+		}
+
+		echo '<div class="notice notice-success is-dismissible"><p><strong>Auto Cleanup WP:</strong> '
+			. 'Setup fertig. Startseite, Permalinks und Elementor-Container sind gesetzt. '
+			. 'Das Plugin hat sich selbst deaktiviert.</p></div>';
 	}
 }
