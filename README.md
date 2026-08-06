@@ -1,81 +1,89 @@
 # Auto Cleanup WP
 
-Automatically prepares a fresh WordPress installation by removing default content and applying common initial settings.
+Ein WordPress-Plugin, das eine frische Installation in einem Rutsch einrichtet: Standard-Inhalte raus, Startseite rein, Elementor vorbereitet. Danach schaltet es sich selbst ab.
 
-> ⚠️ **Warning**
-> This plugin is intended for **new WordPress installations only**.
-> Activating it on an existing website **will delete all pages and posts**.
-> **Always create a full backup before using this plugin.** Deleted content cannot be recovered.
+Gedacht für den immer gleichen Handgriff am Anfang eines Projekts. Statt zwanzig Klicks durch das WordPress-Backend einmal aktivieren und weiterarbeiten.
 
-## Features
+> ## Achtung, das Plugin löscht endgültig
+>
+> Beim Aktivieren werden **alle Beiträge und Seiten** gelöscht, dazu **alle Themes außer Hello Elementor** sowie die Plugins **Hello Dolly und Akismet**. Nichts davon landet im Papierkorb, es ist sofort weg.
+>
+> Nur auf einer frischen Installation oder nach einem vollständigen Backup einsetzen. Nie auf einer Live-Website.
 
-- 🗑️ Deletes all existing WordPress pages
-- 🗑️ Deletes all existing WordPress posts
-- 🏠 Creates a new static **Home** page
-- 🎨 Sets the page template to **Elementor Full Width**
-- 🧩 Creates **Elementor Pro Theme Builder** templates for global header and footer
-- 🌐 Sets header and footer display conditions to the entire site
-- 🔗 Changes the permalink structure to `/%postname%/`
-- 📦 Enables **Elementor Flexbox Containers**
-- ✅ Automatically deactivates itself after successfully enabling the Elementor Container feature
+## Was das Plugin macht
 
-## Requirements
+Beim Aktivieren, in dieser Reihenfolge:
 
-- WordPress 6.x or newer
-- Elementor installed
-- Elementor Pro installed and activated (recommended before running this plugin)
+1. **Löscht alle Beiträge und Seiten**, auch Entwürfe und den Papierkorb. Damit sind der Standard-Beitrag "Hallo Welt" und die Beispiel-Seite weg.
+2. **Legt eine leere Seite "Startseite" an** und stellt WordPress so ein, dass diese Seite die Startseite ist. Die Seite bekommt das Elementor-Template "Full Width".
+3. **Setzt die Permalinks auf `/%postname%/`**, also saubere URLs ohne Datum und Zahlen.
+4. **Setzt das Häkchen "Suchmaschinen davon abhalten, diese Website zu indexieren".** Sinnvoll, solange die Seite im Bau ist. Vor dem Livegang unbedingt wieder entfernen.
+5. **Löscht alle Themes außer Hello Elementor.** Ist gerade ein anderes Theme aktiv, wird vorher auf Hello Elementor umgeschaltet, damit das aktive Theme nicht gelöscht wird.
+6. **Löscht Hello Dolly und Akismet.**
+7. **Legt im Elementor Pro Theme Builder je ein Template für Header und Footer an**, beide auf "gesamte Website" gestellt, mit einer einfachen Startstruktur zum Weiterbauen. Ohne Elementor Pro wird dieser Schritt übersprungen und es erscheint ein Hinweis im Backend.
 
-## Recommended Setup Order
+Danach, sobald Elementor vollständig geladen ist:
 
-For the cleanest setup, install and activate **Elementor** and **Elementor Pro** before activating this plugin.
+8. **Aktiviert die Elementor Flexbox Container.**
+9. **Deaktiviert sich selbst**, sobald Schritt 8 bestätigt geklappt hat. Man sieht dann eine grüne Erfolgsmeldung im Backend.
 
-Recommended order:
+## Voraussetzungen
 
-1. Install WordPress.
-2. Install and activate the **Hello Elementor** theme.
-3. Install and activate **Elementor**.
-4. Install and activate **Elementor Pro**.
-5. Activate **Auto Cleanup WP**.
+- WordPress 6.x oder neuer
+- Theme **Hello Elementor**
+- **Elementor**
+- **Elementor Pro** für die Header- und Footer-Templates. Ohne Pro läuft der Rest trotzdem durch.
 
-This order is recommended because the plugin prepares the homepage for Elementor, creates global Theme Builder header and footer templates, and enables Elementor container settings.
+## Empfohlene Reihenfolge
+
+Elementor sollte vor diesem Plugin installiert sein, sonst kann der Container nicht aktiviert und der Theme Builder nicht befüllt werden.
+
+1. WordPress installieren
+2. Theme **Hello Elementor** installieren und aktivieren
+3. **Elementor** installieren und aktivieren
+4. **Elementor Pro** installieren und aktivieren
+5. **Auto Cleanup WP** aktivieren
 
 ## Installation
 
-1. Download or clone this repository.
-2. Upload the plugin to `/wp-content/plugins/`.
-3. Install and activate **Elementor** and **Elementor Pro**.
-4. Activate **Auto Cleanup WP** from the WordPress Plugins page.
-5. The plugin will perform its setup automatically.
-6. Once finished, it will deactivate itself.
+1. Repository herunterladen oder klonen.
+2. Ordner nach `/wp-content/plugins/` kopieren.
+3. Im Backend unter *Plugins* aktivieren.
+4. Das Setup läuft sofort los. Nach kurzer Zeit erscheint die Erfolgsmeldung und das Plugin steht wieder auf inaktiv.
 
-## Header and Footer
+## Danach: Header und Footer bearbeiten
 
-After the plugin has finished, it creates the global header and footer in **Elementor Pro Theme Builder**:
+1. Im Backend auf **Templates > Theme Builder**.
+2. **Global Header** und **Global Footer** öffnen und in Elementor bearbeiten.
+3. Prüfen, dass bei beiden die Anzeigebedingung **Gesamte Website** steht.
 
-1. Go to **Templates > Theme Builder**.
-2. Open **Header** and edit **Global Header**.
-3. Open **Footer** and edit **Global Footer**.
-4. Confirm that both templates are published with the display condition **Entire Site**.
+Die Templates enthalten nur ein Grundgerüst: im Header der Seitenname und ein Platzhalter für die Navigation, im Footer eine Copyright-Zeile. Das ist als Startpunkt gedacht, nicht als fertiges Design.
 
-Using Elementor Pro templates is recommended because the header and footer can be edited in one place and automatically applied across the whole website.
+## Aufbau des Codes
 
-The plugin creates simple starter templates. For a final branded layout, edit those templates directly in Elementor Pro Theme Builder or replace the starter structure with prepared Elementor template JSON files.
+Eine Klasse pro Datei, jede Klasse hat genau eine Aufgabe:
 
-## Important
+```
+auto-setup.php                        Startdatei: Plugin-Header, lädt die Klassen, startet das Plugin
+includes/
+  class-asu-plugin.php                steuert den Ablauf und meldet die WordPress-Hooks an
+  class-asu-cleanup.php               löscht Inhalte, Themes und Plugins
+  class-asu-site-setup.php            Startseite, Permalinks, Sichtbarkeit
+  class-asu-elementor-container.php   schaltet die Elementor Flexbox Container ein
+  class-asu-theme-builder.php         legt Header- und Footer-Template an
+  class-asu-admin-notices.php         Meldungen im Backend
+  class-asu-options.php               Namen der gespeicherten Optionen
+  class-asu-wp-admin.php              lädt WordPress-Funktionen nach, die beim Aktivieren fehlen
+```
 
-This plugin performs **destructive operations**.
+`class-asu-plugin.php` ist der Einstiegspunkt zum Lesen. Dort steht der komplette Ablauf auf einer Seite, die eigentliche Arbeit steckt in den anderen Klassen.
 
-It is designed for:
-- ✅ Fresh WordPress installations
-- ✅ Local development
-- ✅ Staging environments
+## Wofür es nicht gedacht ist
 
-It is **not recommended** for:
-- ❌ Existing production websites
-- ❌ Websites containing important pages or posts
+- Bestehende Websites
+- Produktivsysteme
+- Alles, wo Inhalte drin sind, die noch gebraucht werden
 
-Always create a full backup before activation.
-
-## License
+## Lizenz
 
 MIT
