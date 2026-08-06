@@ -38,7 +38,7 @@ class ASU_Cleanup {
 	 * damit das aktive Theme nicht gelöscht wird.
 	 */
 	public function remove_unused_themes() {
-		ASU_Wp_Admin::load_theme_functions();
+		$this->load_theme_functions();
 
 		$current_stylesheet = get_option('stylesheet');
 		$hello_stylesheet   = $this->find_hello_stylesheet();
@@ -77,7 +77,7 @@ class ASU_Cleanup {
 	 * Deaktiviert und löscht die WordPress-Standard-Plugins Hello Dolly und Akismet.
 	 */
 	public function remove_unused_plugins() {
-		ASU_Wp_Admin::load_plugin_functions();
+		$this->load_plugin_functions();
 
 		$installed = function_exists('get_plugins') ? get_plugins() : [];
 
@@ -126,5 +126,40 @@ class ASU_Cleanup {
 		}
 
 		return '';
+	}
+
+	/**
+	 * WordPress lädt nicht seinen ganzen Code bei jedem Seitenaufruf.
+	 * Funktionen wie wp_get_themes() oder delete_theme() liegen in Dateien, die
+	 * beim Aktivieren eines Plugins noch nicht geladen sind. Würde man sie
+	 * einfach aufrufen, bricht PHP mit einem Fehler ab. Also erst die Datei
+	 * nachladen, dann benutzen.
+	 */
+	private function load_theme_functions() {
+		if ( ! function_exists('wp_get_themes') || ! function_exists('switch_theme') ) {
+			$file = ABSPATH . 'wp-includes/theme.php';
+			if ( file_exists($file) ) {
+				require_once $file;
+			}
+		}
+
+		if ( ! function_exists('delete_theme') ) {
+			$file = ABSPATH . 'wp-admin/includes/theme.php';
+			if ( file_exists($file) ) {
+				require_once $file;
+			}
+		}
+	}
+
+	/** Dasselbe für get_plugins(), deactivate_plugins() und delete_plugins(). */
+	private function load_plugin_functions() {
+		if ( function_exists('deactivate_plugins') && function_exists('get_plugins') && function_exists('delete_plugins') ) {
+			return;
+		}
+
+		$file = ABSPATH . 'wp-admin/includes/plugin.php';
+		if ( file_exists($file) ) {
+			require_once $file;
+		}
 	}
 }

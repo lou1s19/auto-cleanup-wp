@@ -15,8 +15,9 @@ WordPress-Plugin, das eine frische Installation einrichtet und sich danach selbs
 
 ## Regeln für dieses Projekt
 
-- **Eine Klasse pro Datei**, Dateiname `class-asu-<name>.php`, Klassenname `ASU_<Name>`. Neue Funktionalität kommt als neue Klasse dazu, nicht als weitere Methode in einer bestehenden, die schon eine andere Aufgabe hat.
-- **Options-Namen nur über `ASU_Options`-Konstanten**, nie als Zeichenkette im Code. Bestehende Namen nicht ändern, sonst verliert ein bereits aktiviertes Plugin seinen Zustand.
+- **Einfach halten hat Vorrang.** Das Plugin wurde bewusst von sieben auf vier Klassen und von vier Hooks auf einen zurückgebaut (siehe CHANGELOG 1.3.0). Keine Abstraktion einbauen, die nur einen einzigen Aufrufer hat.
+- **Eine Klasse pro Datei**, Dateiname `class-asu-<name>.php`, Klassenname `ASU_<Name>`.
+- **Nur zwei Einstiegspunkte:** `register_activation_hook` für das Setup, `admin_init` für Erfolgsmeldung und Selbstabschaltung. Weitere Hooks nur mit gutem Grund.
 - **Kommentare auf Deutsch**, wie im restlichen Code.
 - **Das Plugin löscht endgültig.** Jede Änderung an `ASU_Cleanup` sehr genau prüfen und nur auf einer Wegwerf-Installation testen.
 - Das automatische Anlegen von Theme-Builder-Templates wurde bewusst entfernt (siehe CHANGELOG). Nicht ohne Not wieder einbauen. Der alte Code steht in Commit 8df7c15.

@@ -21,10 +21,11 @@ Beim Aktivieren, in dieser Reihenfolge:
 5. **Löscht alle Themes außer Hello Elementor.** Ist gerade ein anderes Theme aktiv, wird vorher auf Hello Elementor umgeschaltet, damit das aktive Theme nicht gelöscht wird.
 6. **Löscht Hello Dolly und Akismet.**
 
-Danach, sobald Elementor vollständig geladen ist:
-
 7. **Aktiviert die Elementor Flexbox Container.**
-8. **Deaktiviert sich selbst**, sobald Schritt 7 bestätigt geklappt hat. Man sieht dann eine grüne Erfolgsmeldung im Backend.
+
+Beim nächsten Aufruf einer Backend-Seite:
+
+8. **Zeigt eine grüne Erfolgsmeldung und deaktiviert sich selbst.** Das passiert erst danach, weil ein Plugin sich nicht abschalten kann, während WordPress es gerade einschaltet.
 
 Header und Footer legt das Plugin **nicht** an. Das macht man von Hand im Elementor Theme Builder.
 
@@ -55,18 +56,17 @@ Elementor sollte vor diesem Plugin installiert sein, sonst kann der Container ni
 Eine Klasse pro Datei, jede Klasse hat genau eine Aufgabe:
 
 ```
-auto-setup.php                        Startdatei: Plugin-Header, lädt die Klassen, startet das Plugin
+auto-setup.php                Startdatei: Plugin-Header, lädt die Klassen, startet das Plugin
 includes/
-  class-asu-plugin.php                steuert den Ablauf und meldet die WordPress-Hooks an
-  class-asu-cleanup.php               löscht Inhalte, Themes und Plugins
-  class-asu-site-setup.php            Startseite, Permalinks, Sichtbarkeit
-  class-asu-elementor-container.php   schaltet die Elementor Flexbox Container ein
-  class-asu-admin-notices.php         Meldungen im Backend
-  class-asu-options.php               Namen der gespeicherten Optionen
-  class-asu-wp-admin.php              lädt WordPress-Funktionen nach, die beim Aktivieren fehlen
+  class-asu-plugin.php        der Ablauf: was passiert wann
+  class-asu-cleanup.php       löscht Inhalte, Themes und Plugins
+  class-asu-site-setup.php    Startseite, Permalinks, Sichtbarkeit
+  class-asu-elementor.php     schaltet die Elementor Flexbox Container ein
 ```
 
-`class-asu-plugin.php` ist der Einstiegspunkt zum Lesen. Dort steht der komplette Ablauf auf einer Seite, die eigentliche Arbeit steckt in den anderen Klassen.
+`class-asu-plugin.php` ist der Einstiegspunkt zum Lesen. Dort steht der komplette Ablauf auf einer Seite, die eigentliche Arbeit steckt in den drei anderen Klassen.
+
+Das Plugin hängt an genau zwei Stellen in WordPress: `register_activation_hook` für das Setup und `admin_init` für die Erfolgsmeldung und die Selbstabschaltung.
 
 ## Wofür es nicht gedacht ist
 

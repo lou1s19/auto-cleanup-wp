@@ -2,6 +2,16 @@
 
 Neueste Einträge oben.
 
+## 2026-08-06 – Deutlich vereinfacht (Version 1.3.0)
+
+Kernbefund: Die Prüfung `is_container_active()` las genau die Einträge zurück, die `activate()` zwei Zeilen vorher selbst geschrieben hatte. Sie konnte also nie fehlschlagen. Die komplette Warteschleife aus vier Hooks, zwei Merker-Optionen und einer Erfolgskontrolle war ohne Wirkung.
+
+- **Vier Hooks auf einen reduziert.** Das ganze Setup läuft jetzt in `register_activation_hook` von oben nach unten durch, inklusive der Elementor-Container. Übrig bleibt `admin_init` für Erfolgsmeldung und Selbstabschaltung, denn ein Plugin kann sich nicht abschalten, während WordPress es gerade einschaltet.
+- **Drei Optionen auf eine reduziert:** nur noch `asu_setup_done`. Die alten Namen (`asu_base_done`, `asu_container_pending`, `asu_container_ok`) werden nicht mehr benutzt. Auf einer Test-Installation, auf der eine ältere Version schon lief, bleiben sie als Karteileichen in der Datenbank liegen.
+- **Sieben Klassen auf vier reduziert.** Entfallen: `ASU_Options` (war nur eine Namensliste), `ASU_Admin_Notices` (eine einzige Meldung, jetzt in `ASU_Plugin`), `ASU_Wp_Admin` (die zwei Nachlade-Helfer sind jetzt private Methoden in `ASU_Cleanup`, wo sie gebraucht werden). `ASU_Elementor_Container` heißt jetzt `ASU_Elementor`.
+- **Elementor-Schnittstelle entfernt.** Der Aufruf über `\Elementor\Plugin::$instance->experiments` war 30 Zeilen Versionsraterei und schrieb am Ende dieselben Einträge, die jetzt direkt gesetzt werden. Bewusste Abwägung: einfacher Code gegen die theoretische Möglichkeit, dass Elementor die Speicherung umbaut. Falls das passiert, ist `ASU_Elementor::enable_containers()` die einzige anzupassende Stelle.
+- Von 755 auf 371 Zeilen.
+
 ## 2026-08-06 – Theme Builder entfernt (Version 1.2.0)
 
 - Die Erstellung der Header- und Footer-Templates im Elementor Pro Theme Builder wurde entfernt, weil sie in der Praxis nicht funktioniert hat. Header und Footer werden wieder von Hand angelegt.
