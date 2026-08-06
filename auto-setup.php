@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Auto Cleanup WP
- * Description: Richtet eine frische WordPress-Installation ein: löscht Standard-Inhalte, überflüssige Themes und Plugins, legt eine statische Startseite an, erstellt Header- und Footer-Templates im Elementor Pro Theme Builder, setzt die Permalinks auf /%postname%/ und aktiviert die Elementor Flexbox Container. Danach deaktiviert sich das Plugin selbst.
+ * Description: Richtet eine frische WordPress-Installation ein: löscht Standard-Inhalte, überflüssige Themes und Plugins, legt eine statische Startseite an, setzt die Permalinks auf /%postname%/ und aktiviert die Elementor Flexbox Container. Danach deaktiviert sich das Plugin selbst.
  * WARNUNG: Dieses Plugin löscht Inhalte, Themes und Plugins endgültig. Nur auf einer frischen Installation oder nach einem vollständigen Backup einsetzen.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Louis
  * License: MIT
  */
@@ -11,7 +11,7 @@
 // Direkten Aufruf der Datei über den Browser verhindern.
 if ( ! defined('ABSPATH') ) { exit; }
 
-define('ASU_VERSION', '1.1.0');
+define('ASU_VERSION', '1.2.0');
 define('ASU_PLUGIN_FILE', __FILE__);
 define('ASU_PATH', plugin_dir_path(__FILE__));
 
@@ -21,7 +21,6 @@ require_once ASU_PATH . 'includes/class-asu-wp-admin.php';
 require_once ASU_PATH . 'includes/class-asu-cleanup.php';
 require_once ASU_PATH . 'includes/class-asu-site-setup.php';
 require_once ASU_PATH . 'includes/class-asu-elementor-container.php';
-require_once ASU_PATH . 'includes/class-asu-theme-builder.php';
 require_once ASU_PATH . 'includes/class-asu-admin-notices.php';
 require_once ASU_PATH . 'includes/class-asu-plugin.php';
 

@@ -18,18 +18,14 @@ class ASU_Plugin {
 	/** @var ASU_Elementor_Container */
 	private $container;
 
-	/** @var ASU_Theme_Builder */
-	private $theme_builder;
-
 	/** @var ASU_Admin_Notices */
 	private $notices;
 
 	public function __construct() {
-		$this->cleanup       = new ASU_Cleanup();
-		$this->site_setup    = new ASU_Site_Setup();
-		$this->container     = new ASU_Elementor_Container();
-		$this->theme_builder = new ASU_Theme_Builder();
-		$this->notices       = new ASU_Admin_Notices();
+		$this->cleanup    = new ASU_Cleanup();
+		$this->site_setup = new ASU_Site_Setup();
+		$this->container  = new ASU_Elementor_Container();
+		$this->notices    = new ASU_Admin_Notices();
 	}
 
 	/**
@@ -69,9 +65,6 @@ class ASU_Plugin {
 		// 3. Überflüssige Themes und Plugins entfernen.
 		$this->cleanup->remove_unused_themes();
 		$this->cleanup->remove_unused_plugins();
-
-		// 4. Header und Footer im Elementor Pro Theme Builder anlegen.
-		$this->theme_builder->create_header_and_footer();
 
 		// Merken: Grund-Setup fertig, Container steht noch aus.
 		update_option(ASU_Options::BASE_DONE, 1);

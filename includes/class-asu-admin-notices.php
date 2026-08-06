@@ -20,24 +20,14 @@ class ASU_Admin_Notices {
 		}
 
 		if ( get_option(ASU_Options::CONTAINER_OK) ) {
-			$this->success('Setup abgeschlossen – Container ist aktiv, Permalinks, Startseite und Theme-Builder-Templates sind gesetzt.');
+			$this->success('Setup abgeschlossen. Startseite, Permalinks und Elementor-Container sind gesetzt, das Plugin hat sich selbst deaktiviert.');
 			delete_option(ASU_Options::CONTAINER_OK);
-		}
-
-		if ( get_option(ASU_Options::THEME_BUILDER_SKIPPED) ) {
-			$this->warning('Elementor Pro war nicht aktiv. Header und Footer wurden deshalb nicht im Theme Builder erstellt.');
-			delete_option(ASU_Options::THEME_BUILDER_SKIPPED);
 		}
 	}
 
 	/** Grüne Erfolgsmeldung. */
 	private function success($message) {
 		$this->notice('notice-success', $message);
-	}
-
-	/** Gelbe Warnmeldung. */
-	private function warning($message) {
-		$this->notice('notice-warning', $message);
 	}
 
 	/**
