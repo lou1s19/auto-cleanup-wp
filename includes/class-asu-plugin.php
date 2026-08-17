@@ -52,7 +52,7 @@ final class ASU_Plugin {
 	 * @param ASU_Site_Setup|null $site_setup Grundeinstellungen.
 	 * @param ASU_Elementor|null  $elementor  Elementor-Wissen.
 	 */
-	public function __construct( $file, ASU_Cleanup $cleanup = null, ASU_Site_Setup $site_setup = null, ASU_Elementor $elementor = null ) {
+	public function __construct( $file, ?ASU_Cleanup $cleanup = null, ?ASU_Site_Setup $site_setup = null, ?ASU_Elementor $elementor = null ) {
 		$this->file       = (string) $file;
 		$this->cleanup    = $cleanup ? $cleanup : new ASU_Cleanup( plugin_basename( $this->file ) );
 		$this->site_setup = $site_setup ? $site_setup : new ASU_Site_Setup();

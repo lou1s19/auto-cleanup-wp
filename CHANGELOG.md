@@ -2,17 +2,46 @@
 
 Neueste Einträge oben.
 
-## Unveröffentlicht – 2026-08-17
+## 1.1.0 – 2026-08-17
 
-- `.gitignore` und `.github/workflows/ci.yml` ergänzt. Die CI lintet alle PHP-Dateien mit PHP 7.4 und 8.3 und prüft, dass Plugin-Header und `ASU_VERSION` dieselbe Nummer tragen. Noch nicht gepusht.
-- Kompletter Review durchgeführt (Claude + Codex-Zweitmeinung). Syntax auf PHP 8.2 sauber. Offene Funde, noch nicht behoben:
-  - `class-asu-site-setup.php:32` setzt `_wp_page_template` auf `elementor_full_width`. Diesen Slug gibt es in Elementor nicht, richtig wäre `elementor_header_footer`. Die Startseite bekommt dadurch stillschweigend das Standard-Template.
-  - `class-asu-elementor.php:20-28` schreibt die Option `elementor_experimentation`. Elementor liest sie nie, es zählt nur `elementor_experiment-container` (Zeile 31). Toter Code plus Karteileiche in `wp_options`.
-  - Kein Multisite-Schutz: `delete_theme()` und `delete_plugins()` löschen netzwerkweit, obwohl das Setup nur für eine Site gedacht ist.
-  - Ist Hello Elementor nicht installiert, wird nicht umgeschaltet und das Parent-Theme eines aktiven Child-Themes kann gelöscht werden.
-  - Die `try/catch` in `ASU_Cleanup` fangen ins Leere: `delete_theme()` und `delete_plugins()` liefern `WP_Error`, sie werfen keine Exception. Fehler bleiben unbemerkt, die Erfolgsmeldung erscheint trotzdem.
-  - `admin_init` feuert auch auf `admin-ajax.php`. Trifft es dort zuerst, deaktiviert sich das Plugin korrekt, aber die Erfolgsmeldung sieht niemand.
-- Branch `origin/refactor/oop-struktur` zeigt auf denselben Commit wie `main`, ist also vollständig gemergt und kann weg.
+Kompletter Review durch Claude und Codex, danach alle Funde behoben und der Code durchgängig objektorientiert aufgebaut. Erstmals mit Tests und CI.
+
+### Behobene Fehler
+
+- **Falscher Elementor-Template-Slug.** `_wp_page_template` wurde auf `elementor_full_width` gesetzt. Diesen Slug gibt es in Elementor nicht, geprüft gegen `modules/page-templates/module.php`. Es gibt nur `elementor_canvas`, `elementor_header_footer` und `elementor_theme`. Der Anzeigename "Elementor Full Width" gehört zu `elementor_header_footer`. WordPress ignoriert unbekannte Slugs stillschweigend, die Startseite bekam also das Standard-Template, ohne dass es auffiel.
+- **Tote Option `elementor_experimentation`.** Elementor liest sie nie, es bildet den Schlüssel als `elementor_experiment-` plus Name des Experiments. Die Zeilen schrieben nur eine Karteileiche in `wp_options`. Entfernt, übrig bleibt `elementor_experiment-container`.
+- **Kein Schutz vor Multisite.** `delete_theme()` und `delete_plugins()` löschen Dateien, die sich alle Sites eines Netzwerks teilen. Eine Aktivierung hätte das ganze Netzwerk getroffen. Das Setup bricht jetzt ab und sagt im Backend, warum.
+- **Parent-Theme konnte gelöscht werden.** Geschützt war nur das aktive Stylesheet. Fehlte Hello Elementor, wurde nicht umgeschaltet, und bei einem aktiven Child-Theme flog dessen Parent raus. Das Ergebnis wäre eine weisse Website gewesen. Jetzt sind das aktive Theme und sein Parent geschützt.
+- **`try/catch` fing ins Leere.** `delete_theme()` und `delete_plugins()` liefern im Fehlerfall ein `WP_Error`, sie werfen keine Exception. Die Blöcke fingen also nie etwas, Fehler blieben unbemerkt, und die grüne Erfolgsmeldung erschien trotzdem. Jetzt wird der Rückgabewert geprüft, und der umschliessende `catch` fängt `Throwable` statt `Exception`, damit auch PHP-Fehler den Ablauf nicht stumm abbrechen.
+- **`admin_init` feuert auch auf `admin-ajax.php`.** Traf dort eine Anfrage zuerst ein, und das können auch nicht eingeloggte Besucher auslösen, wurde die Notiz verbraucht. Das Plugin deaktivierte sich korrekt, aber niemand sah die Meldung. AJAX, Cron, REST und Autosave werden jetzt übersprungen.
+- **Auto-Entwürfe blieben liegen.** `auto-draft` fehlte in der Liste der Post-Status.
+
+### Umbau
+
+- **Autoloader statt `require_once`-Liste.** `auto-setup.php` enthält nur noch den Plugin-Header und zwei Aufrufe. Keine globalen Konstanten (`ASU_VERSION`, `ASU_PATH`, `ASU_PLUGIN_FILE`) und keine globale `$asu_plugin`-Variable mehr.
+- **Neue Klasse `ASU_Result`.** Jeder Schritt trägt ein, ob er geklappt hat. Das Protokoll überlebt als Option den Seitenaufruf. Die Meldung im Backend ist dadurch ehrlich: grün nur, wenn wirklich alles gelaufen ist, sonst gelb mit den fehlgeschlagenen Schritten im Klartext.
+- **Alle Klassen `final`,** feste Listen als Klassenkonstanten statt als Instanzfelder. Die Bausteine dürfen in `ASU_Plugin` hereingereicht werden, damit die Tests eigene einsetzen können.
+- Ausgaben sind escaped und über `__()` übersetzbar. Der Plugin-Header nennt jetzt `Requires at least`, `Requires PHP` und `Text Domain`.
+- Das eigene Plugin steht nie auf der Löschliste, auch wenn jemand die Liste erweitert.
+
+### Tests und CI
+
+31 Tests in `tests/`, in reinem PHP. Kein Composer, kein PHPUnit, keine WordPress-Testsuite, passend zur Regel "keine Abhängigkeiten". Der Teil von WordPress, den das Plugin anfasst, ist in `tests/bootstrap.php` als Attrappe nachgebaut. Aufruf:
+
+```
+php tests/run.php
+```
+
+Jeder der oben genannten Fehler wurde einmal wieder eingebaut, um zu prüfen, dass auch wirklich ein Test rot wird. Alle sieben wurden gefangen.
+
+`.github/workflows/ci.yml` lintet und testet auf PHP 7.4, 8.3 und 8.4 und vergleicht die Version im Plugin-Header mit der obersten Überschrift dieser Datei.
+
+### Hinweise
+
+- Die Option `asu_setup_done` heisst jetzt `asu_setup_result` und enthält das Protokoll statt einer 1.
+- Alte Optionen aus früheren Versionen (`asu_base_done`, `asu_container_pending`, `asu_container_ok`, `asu_theme_builder_*`, `elementor_experimentation`) werden nicht mehr benutzt und bleiben auf Testinstallationen als Karteileichen liegen.
+- Übersetzungsdateien gibt es keine. Die Texte sind Deutsch, aber über `__()` austauschbar.
+- Auf einer echten WordPress-Installation ist diese Version noch nicht aktiviert worden. Die Tests laufen gegen eine Attrappe, sie ersetzen keinen Durchlauf auf einer Wegwerf-Installation.
 
 ## 1.0.3 – 2026-08-06
 
@@ -28,6 +57,5 @@ Auf einer lokalen Test-WordPress geprüft, läuft.
 ### Hinweise
 
 - Die Versionsnummer wurde bewusst auf 1.0.3 gesetzt. Die alte Einzeldatei stand auf 1.0.6.
-- Alte Optionen aus früheren Versionen (`asu_base_done`, `asu_container_pending`, `asu_container_ok`, `asu_theme_builder_*`) werden nicht mehr benutzt und bleiben auf Testinstallationen als Karteileichen liegen.
 - Texte sind fest auf Deutsch verdrahtet, ohne WordPress-Übersetzungsfunktionen.
 - Keine automatisierten Tests.

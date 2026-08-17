@@ -7,15 +7,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: PHP-Syntax pruefen
+  test:
+    name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        # Niedrigste von WordPress unterstuetzte Version und eine aktuelle.
-        php: ['7.4', '8.3']
+        # Niedrigste unterstuetzte Version, aktuelle Version und die naechste,
+        # damit neue Deprecations auffallen, bevor sie auf Kundenservern landen.
+        php: ['7.4', '8.3', '8.4']
 
     steps:
       - uses: actions/checkout@v4
@@ -32,13 +33,25 @@ jobs:
           find . -path ./vendor -prune -o -name '*.php' -print \
             | xargs -n1 -P4 php -l
 
+      - name: Tests
+        # Deprecations und Notices zaehlen als Fehler, sonst rutschen sie durch.
+        run: php -d error_reporting=E_ALL -d display_errors=1 tests/run.php
+
+  meta:
+    name: Version und Header
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Plugin-Header und Konstante muessen dieselbe Version haben
         run: |
           set -e
           header=$(grep -m1 '^ \* Version:' auto-setup.php | sed 's/.*Version:[[:space:]]*//')
-          const=$(grep -m1 "define('ASU_VERSION'" auto-setup.php | sed "s/.*, *'\([^']*\)'.*/\1/")
-          echo "Header: $header / Konstante: $const"
-          if [ "$header" != "$const" ]; then
-            echo "Versionsnummern laufen auseinander." >&2
+          changelog=$(grep -m1 '^## ' CHANGELOG.md | sed 's/^## \([0-9.]*\).*/\1/')
+          echo "Plugin-Header: $header"
+          echo "Changelog:     $changelog"
+          if [ "$header" != "$changelog" ]; then
+            echo "Version im Plugin-Header und im Changelog laufen auseinander." >&2
             exit 1
           fi
