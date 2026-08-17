@@ -86,6 +86,9 @@ final class ASU_Fake_WP {
 	/** @var bool Darf switch_theme() das Stylesheet wirklich ändern? */
 	public static $switch_theme_works = true;
 
+	/** @var array<int, string> Zusaetzlich angemeldete Post-Status. */
+	public static $extra_post_stati = array();
+
 	/**
 	 * @return void
 	 */
@@ -112,6 +115,7 @@ final class ASU_Fake_WP {
 		self::$insert_post_returns   = null;
 		self::$undeletable_posts     = array();
 		self::$switch_theme_works    = true;
+		self::$extra_post_stati      = array();
 
 		$GLOBALS['wp_rewrite'] = new ASU_Fake_Rewrite();
 	}
@@ -138,10 +142,25 @@ final class ASU_Fake_WP {
 	 *
 	 * @param string $stylesheet Verzeichnisname.
 	 * @param string $template   Parent-Theme, leer für ein eigenständiges Theme.
+	 * @param string $name       Theme-Name, leer heisst: aus dem Ordnernamen ableiten.
 	 * @return void
 	 */
-	public static function add_theme( $stylesheet, $template = '' ) {
-		self::$themes[ $stylesheet ] = new ASU_Fake_Theme( $stylesheet, '' === $template ? $stylesheet : $template );
+	public static function add_theme( $stylesheet, $template = '', $name = '' ) {
+		self::$themes[ $stylesheet ] = new ASU_Fake_Theme(
+			$stylesheet,
+			'' === $template ? $stylesheet : $template,
+			$name
+		);
+	}
+
+	/**
+	 * Legt Hello Elementor an, mit dem Namen, den das echte Theme traegt.
+	 *
+	 * @param string $stylesheet Verzeichnisname.
+	 * @return void
+	 */
+	public static function add_hello_elementor( $stylesheet = 'hello-elementor' ) {
+		self::add_theme( $stylesheet, '', 'Hello Elementor' );
 	}
 }
 
@@ -156,13 +175,26 @@ final class ASU_Fake_Theme {
 	/** @var string */
 	private $template;
 
+	/** @var string */
+	private $name;
+
 	/**
 	 * @param string $stylesheet Verzeichnisname.
 	 * @param string $template   Parent-Theme.
+	 * @param string $name       Theme-Name aus der style.css.
 	 */
-	public function __construct( $stylesheet, $template ) {
+	public function __construct( $stylesheet, $template, $name = '' ) {
 		$this->stylesheet = $stylesheet;
 		$this->template   = $template;
+		$this->name       = '' === $name ? $stylesheet : $name;
+	}
+
+	/**
+	 * @param string $header Kopfzeile aus der style.css.
+	 * @return string
+	 */
+	public function get( $header ) {
+		return 'Name' === $header ? $this->name : '';
 	}
 
 	/** @return bool */
@@ -356,6 +388,16 @@ function update_post_meta( $id, $key, $value ) {
  */
 function get_post_meta( $id, $key = '', $single = false ) {
 	return isset( ASU_Fake_WP::$post_meta[ $id ][ $key ] ) ? ASU_Fake_WP::$post_meta[ $id ][ $key ] : '';
+}
+
+/**
+ * @return array<int, string>
+ */
+function get_post_stati() {
+	return array_merge(
+		array( 'publish', 'future', 'draft', 'pending', 'private', 'trash', 'auto-draft', 'inherit' ),
+		ASU_Fake_WP::$extra_post_stati
+	);
 }
 
 /**

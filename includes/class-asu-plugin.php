@@ -15,6 +15,14 @@ final class ASU_Plugin {
 	/** Protokoll des Setups. Das Einzige, was den Aktivierungs-Aufruf überlebt. */
 	const OPTION_RESULT = 'asu_setup_result';
 
+	/**
+	 * Wann das Setup gelaufen ist. Bleibt absichtlich für immer stehen, auch
+	 * nachdem sich das Plugin deaktiviert hat. Ohne diese Notiz würde eine
+	 * versehentliche zweite Aktivierung Monate später alle Inhalte löschen,
+	 * die inzwischen entstanden sind.
+	 */
+	const OPTION_RAN = 'asu_setup_ran';
+
 	/** @var string Pfad zur Hauptdatei des Plugins. */
 	private $file;
 
@@ -92,6 +100,22 @@ final class ASU_Plugin {
 			return $this->store( $result );
 		}
 
+		$ran_at = get_option( self::OPTION_RAN );
+
+		if ( $ran_at ) {
+			$result->fail(
+				'wiederholung',
+				sprintf(
+					'Abgebrochen: Das Setup ist auf dieser Website schon einmal gelaufen (%s). Es wurde nichts verändert. Wer es wirklich erneut braucht, löscht vorher die Option %s.',
+					$ran_at,
+					self::OPTION_RAN
+				)
+			);
+
+			return $this->store( $result );
+		}
+
+		// Ab hier wird geloescht. Die Notiz kommt am Ende, egal wie der Lauf ausgeht.
 		try {
 			$this->cleanup->delete_all_posts_and_pages( $result );
 
@@ -111,6 +135,8 @@ final class ASU_Plugin {
 			$result->fail( 'abbruch', sprintf( 'Unerwarteter Fehler: %s', $e->getMessage() ) );
 		}
 
+		update_option( self::OPTION_RAN, gmdate( 'Y-m-d H:i' ) . ' UTC', false );
+
 		return $this->store( $result );
 	}
 
@@ -127,6 +153,14 @@ final class ASU_Plugin {
 		// admin_init feuert auch auf admin-ajax.php, im Cron und bei REST-Aufrufen.
 		// Würde das Protokoll dort verbraucht, sähe der Mensch die Meldung nie.
 		if ( $this->is_background_request() ) {
+			return;
+		}
+
+		// Dasselbe gilt für jeden angemeldeten Nutzer ohne Adminrechte: Auch ein
+		// Abonnent löst beim Aufruf seines Profils admin_init aus. Ohne diese
+		// Prüfung würde er das Protokoll verbrauchen und die Meldung, die er
+		// ohnehin nicht sehen darf, wäre für alle weg.
+		if ( ! current_user_can( 'activate_plugins' ) ) {
 			return;
 		}
 

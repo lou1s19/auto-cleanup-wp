@@ -44,7 +44,7 @@ final class ASU_Cleanup {
 			array(
 				'post_type'   => array( 'post', 'page' ),
 				'numberposts' => -1,
-				'post_status' => self::POST_STATUSES,
+				'post_status' => $this->post_statuses(),
 				'fields'      => 'ids',
 			)
 		);
@@ -98,11 +98,19 @@ final class ASU_Cleanup {
 			return;
 		}
 
-		$this->switch_to_hello( $result );
+		if ( ! $this->switch_to_hello( $result ) ) {
+			// Der Wechsel wurde versucht und ging schief. In diesem Zustand wird
+			// nichts gelöscht: Welches Theme WordPress jetzt für aktiv hält, ist
+			// unklar, und ein falsch gelöschtes Theme ist nicht rückholbar.
+			$result->fail( 'themes', 'Wegen des fehlgeschlagenen Theme-Wechsels wurde kein Theme gelöscht.' );
+
+			return;
+		}
 
 		$protected = $this->protected_stylesheets();
 		$deleted   = 0;
-		$problems  = array();
+		$failed    = 0;
+		$silent    = array();
 
 		foreach ( wp_get_themes() as $stylesheet => $theme ) {
 			if ( $this->is_protected( $stylesheet, $theme, $protected ) ) {
@@ -111,30 +119,33 @@ final class ASU_Cleanup {
 
 			$deletion = delete_theme( $stylesheet );
 
+			// Ein WP_Error nennt den Grund und steht damit schon im Protokoll.
 			if ( $result->catch_wp_error( 'themes', $deletion, sprintf( 'Theme %s', $stylesheet ) ) ) {
-				$problems[] = $stylesheet;
+				++$failed;
 				continue;
 			}
 
-			// delete_theme() liefert true, false oder null. Alles ausser true ist ein Fehlschlag.
+			// delete_theme() liefert true, false oder null. Alles ausser true ist
+			// ein Fehlschlag, nur ohne Begründung. Die kommen gesammelt.
 			if ( true !== $deletion ) {
-				$problems[] = $stylesheet;
+				++$failed;
+				$silent[] = $stylesheet;
 				continue;
 			}
 
 			++$deleted;
 		}
 
-		if ( array() !== $problems ) {
+		if ( array() !== $silent ) {
 			$result->fail(
 				'themes',
-				sprintf( 'Diese Themes liessen sich nicht löschen: %s.', implode( ', ', $problems ) )
+				sprintf( 'Diese Themes liessen sich ohne Angabe eines Grundes nicht löschen: %s.', implode( ', ', $silent ) )
 			);
-
-			return;
 		}
 
-		$result->ok( 'themes', sprintf( '%d überflüssige Themes gelöscht.', $deleted ) );
+		if ( 0 === $failed ) {
+			$result->ok( 'themes', sprintf( '%d überflüssige Themes gelöscht.', $deleted ) );
+		}
 	}
 
 	/**
@@ -184,6 +195,30 @@ final class ASU_Cleanup {
 	}
 
 	/**
+	 * Alle Post-Status, nach denen gesucht wird.
+	 *
+	 * Die feste Liste deckt WordPress selbst ab. Plugins dürfen aber eigene
+	 * Status anmelden, und Seiten mit so einem Status wären sonst durchgerutscht
+	 * und später wieder aufgetaucht. Deshalb werden alle angemeldeten Status
+	 * dazugenommen.
+	 *
+	 * @return array<int, string>
+	 */
+	private function post_statuses() {
+		$statuses = self::POST_STATUSES;
+
+		if ( function_exists( 'get_post_stati' ) ) {
+			$registered = get_post_stati();
+
+			if ( is_array( $registered ) ) {
+				$statuses = array_merge( $statuses, array_values( $registered ) );
+			}
+		}
+
+		return array_values( array_unique( $statuses ) );
+	}
+
+	/**
 	 * Die installierten Plugins, die auf der Abschussliste stehen.
 	 * Das eigene Plugin ist nie dabei, auch wenn jemand die Liste erweitert.
 	 *
@@ -209,7 +244,7 @@ final class ASU_Cleanup {
 	 * Schaltet auf Hello Elementor um, damit das bisher aktive Theme gelöscht werden darf.
 	 *
 	 * @param ASU_Result $result Protokoll des Laufs.
-	 * @return void
+	 * @return bool False nur, wenn ein Wechsel versucht wurde und misslang.
 	 */
 	private function switch_to_hello( ASU_Result $result ) {
 		$hello = $this->find_hello_stylesheet();
@@ -220,17 +255,17 @@ final class ASU_Cleanup {
 				'Hello Elementor ist nicht installiert. Das aktive Theme und sein Parent bleiben stehen.'
 			);
 
-			return;
+			return true;
 		}
 
 		if ( get_option( 'stylesheet' ) === $hello ) {
-			return;
+			return true;
 		}
 
 		if ( ! function_exists( 'switch_theme' ) ) {
 			$result->fail( 'theme-wechsel', 'switch_theme() steht nicht zur Verfügung.' );
 
-			return;
+			return false;
 		}
 
 		// switch_theme() gibt nichts zurück, also wird das Ergebnis nachgelesen.
@@ -239,10 +274,12 @@ final class ASU_Cleanup {
 		if ( get_option( 'stylesheet' ) !== $hello ) {
 			$result->fail( 'theme-wechsel', sprintf( 'Umschalten auf %s hat nicht funktioniert.', $hello ) );
 
-			return;
+			return false;
 		}
 
 		$result->ok( 'theme-wechsel', sprintf( 'Auf %s umgeschaltet.', $hello ) );
+
+		return true;
 	}
 
 	/**
@@ -286,7 +323,12 @@ final class ASU_Cleanup {
 	}
 
 	/**
-	 * Sucht das installierte Hello-Theme. Bevorzugt "hello-elementor".
+	 * Sucht das installierte Hello Elementor. Bevorzugt den Ordner "hello-elementor".
+	 *
+	 * Der Ordnername allein reicht nicht als Beweis. Ein fremdes Theme in einem
+	 * Ordner namens "hello" wäre sonst für Hello Elementor gehalten worden, das
+	 * Setup hätte darauf umgeschaltet und danach das eigentliche Theme endgültig
+	 * gelöscht. Deshalb wird zusätzlich der Theme-Name geprüft.
 	 *
 	 * @return string Verzeichnisname des Themes, leer wenn keines gefunden wurde.
 	 */
@@ -298,12 +340,24 @@ final class ASU_Cleanup {
 		foreach ( array( 'hello-elementor', 'hello' ) as $candidate ) {
 			$theme = wp_get_theme( $candidate );
 
-			if ( $theme && $theme->exists() ) {
+			if ( $theme && $theme->exists() && $this->is_hello_elementor( $theme ) ) {
 				return $candidate;
 			}
 		}
 
 		return '';
+	}
+
+	/**
+	 * @param WP_Theme|object $theme Theme-Objekt.
+	 * @return bool True, wenn das Theme sich selbst Hello Elementor nennt.
+	 */
+	private function is_hello_elementor( $theme ) {
+		if ( ! method_exists( $theme, 'get' ) ) {
+			return false;
+		}
+
+		return 0 === stripos( (string) $theme->get( 'Name' ), 'hello elementor' );
 	}
 
 	/**
