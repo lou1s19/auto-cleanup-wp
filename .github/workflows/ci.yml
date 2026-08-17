@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: PHP-Syntax pruefen
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Niedrigste von WordPress unterstuetzte Version und eine aktuelle.
+        php: ['7.4', '8.3']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP einrichten
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Alle PHP-Dateien linten
+        run: |
+          set -e
+          find . -path ./vendor -prune -o -name '*.php' -print \
+            | xargs -n1 -P4 php -l
+
+      - name: Plugin-Header und Konstante muessen dieselbe Version haben
+        run: |
+          set -e
+          header=$(grep -m1 '^ \* Version:' auto-setup.php | sed 's/.*Version:[[:space:]]*//')
+          const=$(grep -m1 "define('ASU_VERSION'" auto-setup.php | sed "s/.*, *'\([^']*\)'.*/\1/")
+          echo "Header: $header / Konstante: $const"
+          if [ "$header" != "$const" ]; then
+            echo "Versionsnummern laufen auseinander." >&2
+            exit 1
+          fi

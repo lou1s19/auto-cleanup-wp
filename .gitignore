@@ -1,0 +1,18 @@
+# Umgebung und Secrets
+.env
+.env.*
+!.env.example
+
+# Werkzeuge
+.repowise/
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+
+# Falls doch mal Composer dazukommt
+vendor/
+composer.lock
