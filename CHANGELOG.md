@@ -2,6 +2,18 @@
 
 Neueste Einträge oben.
 
+## Unveröffentlicht – 2026-08-17
+
+- `.gitignore` und `.github/workflows/ci.yml` ergänzt. Die CI lintet alle PHP-Dateien mit PHP 7.4 und 8.3 und prüft, dass Plugin-Header und `ASU_VERSION` dieselbe Nummer tragen. Noch nicht gepusht.
+- Kompletter Review durchgeführt (Claude + Codex-Zweitmeinung). Syntax auf PHP 8.2 sauber. Offene Funde, noch nicht behoben:
+  - `class-asu-site-setup.php:32` setzt `_wp_page_template` auf `elementor_full_width`. Diesen Slug gibt es in Elementor nicht, richtig wäre `elementor_header_footer`. Die Startseite bekommt dadurch stillschweigend das Standard-Template.
+  - `class-asu-elementor.php:20-28` schreibt die Option `elementor_experimentation`. Elementor liest sie nie, es zählt nur `elementor_experiment-container` (Zeile 31). Toter Code plus Karteileiche in `wp_options`.
+  - Kein Multisite-Schutz: `delete_theme()` und `delete_plugins()` löschen netzwerkweit, obwohl das Setup nur für eine Site gedacht ist.
+  - Ist Hello Elementor nicht installiert, wird nicht umgeschaltet und das Parent-Theme eines aktiven Child-Themes kann gelöscht werden.
+  - Die `try/catch` in `ASU_Cleanup` fangen ins Leere: `delete_theme()` und `delete_plugins()` liefern `WP_Error`, sie werfen keine Exception. Fehler bleiben unbemerkt, die Erfolgsmeldung erscheint trotzdem.
+  - `admin_init` feuert auch auf `admin-ajax.php`. Trifft es dort zuerst, deaktiviert sich das Plugin korrekt, aber die Erfolgsmeldung sieht niemand.
+- Branch `origin/refactor/oop-struktur` zeigt auf denselben Commit wie `main`, ist also vollständig gemergt und kann weg.
+
 ## 1.0.3 – 2026-08-06
 
 Auf einer lokalen Test-WordPress geprüft, läuft.
