@@ -1,25 +1,28 @@
 <?php
 /**
- * Plugin Name: Auto Cleanup WP
- * Description: Räumt eine frische WordPress-Installation auf und richtet sie für Elementor ein. Deaktiviert sich danach selbst. Achtung: löscht Inhalte, Themes und Plugins endgültig.
- * Version: 1.0.3
- * Author: Louis
- * License: MIT
+ * Plugin Name:       Auto Cleanup WP
+ * Plugin URI:        https://github.com/lou1s19/auto-cleanup-wp
+ * Description:       Räumt eine frische WordPress-Installation auf und richtet sie für Elementor ein. Deaktiviert sich danach selbst. Achtung: löscht Inhalte, Themes und Plugins endgültig.
+ * Version:           1.1.0
+ * Requires at least: 6.0
+ * Requires PHP:      7.4
+ * Author:            Louis
+ * License:           MIT
+ * License URI:       https://opensource.org/licenses/MIT
+ * Text Domain:       auto-cleanup-wp
+ *
+ * @package AutoCleanupWP
  */
 
 // Direkten Aufruf der Datei über den Browser verhindern.
-if ( ! defined('ABSPATH') ) { exit; }
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
-define('ASU_VERSION', '1.0.3');
-define('ASU_PLUGIN_FILE', __FILE__);
-define('ASU_PATH', plugin_dir_path(__FILE__));
+// Der Autoloader ist die einzige Datei, die von Hand geladen wird.
+// Alles Weitere holt er sich selbst, sobald eine ASU_-Klasse gebraucht wird.
+require_once __DIR__ . '/includes/class-asu-autoloader.php';
 
-// Die vier Bausteine laden. Eine Klasse pro Datei.
-require_once ASU_PATH . 'includes/class-asu-cleanup.php';
-require_once ASU_PATH . 'includes/class-asu-site-setup.php';
-require_once ASU_PATH . 'includes/class-asu-elementor.php';
-require_once ASU_PATH . 'includes/class-asu-plugin.php';
+ASU_Autoloader::register( __DIR__ . '/includes' );
 
-// Plugin starten.
-$asu_plugin = new ASU_Plugin();
-$asu_plugin->register();
+ASU_Plugin::boot( __FILE__ );
