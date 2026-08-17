@@ -26,9 +26,17 @@ Beim nächsten Aufruf einer Backend-Seite:
 
 Header und Footer legt das Plugin **nicht** an. Das macht man von Hand im Elementor Theme Builder.
 
+## Was das Plugin **nicht** anfasst
+
+- **Mediendateien.** Die Mediathek bleibt vollständig stehen.
+- **Andere Inhaltstypen.** Produkte, Formulare und alles, was kein Beitrag und keine Seite ist, bleibt.
+- **Benutzer, Kommentare, Einstellungen** außer den drei oben genannten.
+
 ## Wo das Plugin abbricht
 
 - **Multisite.** In einem Netzwerk teilen sich alle Sites dieselben Theme- und Plugin-Dateien. Ein Setup für eine einzelne Site darf sie nicht löschen. Das Plugin bricht ab, verändert nichts und sagt im Backend, warum.
+- **Zweite Aktivierung.** Nach dem ersten Lauf bleibt die Option `asu_setup_ran` mit Datum in der Datenbank stehen, dauerhaft. Wird das Plugin später noch einmal aktiviert, bricht es ab und löscht nichts. Das schützt davor, dass eine gewachsene Website Monate später aus Versehen leergeräumt wird. Wer den Lauf wirklich wiederholen will, löscht die Option vorher von Hand.
+- **Fehlgeschlagener Theme-Wechsel.** Lässt sich nicht auf Hello Elementor umschalten, wird kein einziges Theme gelöscht. In dem Zustand ist zu unklar, was noch gebraucht wird.
 
 ## Voraussetzungen
 
@@ -79,7 +87,7 @@ Das Plugin hängt an genau zwei Stellen in WordPress: `register_activation_hook`
 php tests/run.php
 ```
 
-Kein Composer, kein PHPUnit. Der Teil von WordPress, den das Plugin anfasst, ist in `tests/bootstrap.php` als Attrappe nachgebaut. Getestet wird vor allem das, was beim Löschen schiefgehen kann: welche Themes geschützt sind, was passiert, wenn WordPress ein `WP_Error` liefert, und dass in einem Multisite-Netzwerk nichts angefasst wird.
+Kein Composer, kein PHPUnit. Der Teil von WordPress, den das Plugin anfasst, ist in `tests/bootstrap.php` als Attrappe nachgebaut. Getestet wird vor allem das, was beim Löschen schiefgehen kann: welche Themes geschützt sind, was passiert, wenn WordPress ein `WP_Error` liefert, und dass bei Multisite oder einer zweiten Aktivierung nichts angefasst wird.
 
 Nur Syntax prüfen:
 

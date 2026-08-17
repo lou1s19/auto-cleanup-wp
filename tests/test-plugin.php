@@ -14,7 +14,7 @@ function asu_test_plugin() {
 	ASU_Fake_WP::add_post( 'post', 'publish' );
 	ASU_Fake_WP::add_post( 'page', 'draft' );
 
-	ASU_Fake_WP::add_theme( 'hello-elementor' );
+	ASU_Fake_WP::add_hello_elementor();
 	ASU_Fake_WP::add_theme( 'twentytwentyfour' );
 	ASU_Fake_WP::$options['stylesheet'] = 'twentytwentyfour';
 
@@ -221,5 +221,65 @@ test(
 
 		Assert::same( 1, count( ASU_Fake_WP::$activation_hooks ), 'Ein Aktivierungs-Hook.' );
 		Assert::same( 1, count( ASU_Fake_WP::$actions['admin_init'] ), 'Ein admin_init.' );
+	}
+);
+
+test(
+	'Wiederholung: eine zweite Aktivierung loescht nichts mehr',
+	function () {
+		// Der Katastrophenfall: Monate spaeter aus Versehen erneut aktiviert.
+		// Ohne diese Sperre waeren alle inzwischen entstandenen Inhalte weg.
+		asu_test_plugin()->run_setup();
+
+		$ran_at = get_option( ASU_Plugin::OPTION_RAN );
+
+		Assert::true( (bool) $ran_at, 'Der erste Lauf hinterlaesst eine dauerhafte Notiz.' );
+
+		// Neue Inhalte, wie sie im Laufe der Zeit entstehen.
+		$wichtig = ASU_Fake_WP::add_post( 'page', 'publish' );
+		ASU_Fake_WP::$deleted_posts = array();
+
+		$result = asu_test_plugin()->run_setup();
+
+		Assert::true( isset( ASU_Fake_WP::$posts[ $wichtig ] ), 'Die neue Seite muss den zweiten Lauf ueberleben.' );
+		Assert::same( array(), ASU_Fake_WP::$deleted_posts, 'Beim zweiten Mal wird nichts geloescht.' );
+		Assert::true( $result->has_failures(), 'Der Abbruch steht im Protokoll.' );
+		Assert::text_contains( 'schon einmal gelaufen', $result->failures()[0]['detail'], 'Und er ist verstaendlich begruendet.' );
+	}
+);
+
+test(
+	'Wiederholung: der Multisite-Abbruch setzt die Notiz nicht',
+	function () {
+		// Sonst waere das Plugin auf einer normalen Site danach fuer immer gesperrt.
+		ASU_Fake_WP::$is_multisite = true;
+		asu_test_plugin()->run_setup();
+
+		Assert::false( (bool) get_option( ASU_Plugin::OPTION_RAN ), 'Ohne Lauf keine Notiz.' );
+	}
+);
+
+test(
+	'Abschluss: ein angemeldeter Nutzer ohne Adminrechte verbraucht das Protokoll nicht',
+	function () {
+		// Auch ein Abonnent loest beim Aufruf seines Profils admin_init aus.
+		$plugin = asu_test_plugin();
+		$plugin->run_setup();
+
+		ASU_Fake_WP::$can_manage_options = false;
+		$plugin->finish();
+
+		Assert::true( (bool) get_option( ASU_Plugin::OPTION_RESULT ), 'Das Protokoll muss fuer den Admin liegen bleiben.' );
+		Assert::missing(
+			'auto-cleanup-wp/auto-setup.php',
+			ASU_Fake_WP::$deactivated_plugins,
+			'Ein Abonnent darf das Plugin nicht abschalten.'
+		);
+
+		// Der Admin sieht die Meldung danach trotzdem.
+		ASU_Fake_WP::$can_manage_options = true;
+		$plugin->finish();
+
+		Assert::text_contains( 'notice-', asu_do_action( 'admin_notices' ), 'Jetzt kommt die Meldung.' );
 	}
 );

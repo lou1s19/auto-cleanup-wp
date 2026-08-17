@@ -56,7 +56,7 @@ test(
 	function () {
 		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
 		ASU_Fake_WP::add_theme( 'twentytwentyfive' );
-		ASU_Fake_WP::add_theme( 'hello-elementor' );
+		ASU_Fake_WP::add_hello_elementor();
 		ASU_Fake_WP::$options['stylesheet'] = 'twentytwentyfour';
 
 		$result  = new ASU_Result();
@@ -72,7 +72,7 @@ test(
 test(
 	'Themes: behaelt ein Child-Theme von Hello Elementor',
 	function () {
-		ASU_Fake_WP::add_theme( 'hello-elementor' );
+		ASU_Fake_WP::add_hello_elementor();
 		ASU_Fake_WP::add_theme( 'mein-child', 'hello-elementor' );
 		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
 		ASU_Fake_WP::$options['stylesheet'] = 'hello-elementor';
@@ -109,7 +109,7 @@ test(
 test(
 	'Themes: ein fehlgeschlagenes Loeschen landet als WP_Error im Protokoll',
 	function () {
-		ASU_Fake_WP::add_theme( 'hello-elementor' );
+		ASU_Fake_WP::add_hello_elementor();
 		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
 		ASU_Fake_WP::$options['stylesheet']   = 'hello-elementor';
 		ASU_Fake_WP::$delete_theme_returns    = array(
@@ -124,7 +124,27 @@ test(
 
 		$failures = $result->failures();
 
+		Assert::same( 1, count( $failures ), 'Ein Problem ergibt genau eine Zeile in der Meldung, nicht zwei.' );
 		Assert::text_contains( 'Kein Schreibzugriff', $failures[0]['detail'], 'Der Grund von WordPress gehoert in die Meldung.' );
+	}
+);
+
+test(
+	'Themes: ein stiller Fehlschlag ohne WP_Error wird trotzdem gemeldet',
+	function () {
+		ASU_Fake_WP::add_hello_elementor();
+		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
+		ASU_Fake_WP::$options['stylesheet'] = 'hello-elementor';
+
+		// delete_theme() liefert auch false oder null, ohne einen Grund zu nennen.
+		ASU_Fake_WP::$delete_theme_returns = array( 'twentytwentyfour' => false );
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( $result );
+
+		Assert::true( $result->has_failures(), 'Auch ohne Begruendung darf das nicht als Erfolg durchgehen.' );
+		Assert::same( 1, count( $result->failures() ), 'Genau eine Zeile.' );
 	}
 );
 
@@ -195,5 +215,58 @@ test(
 		$cleanup->remove_unused_plugins( $result );
 
 		Assert::true( $result->has_failures(), 'Ein WP_Error muss auffallen.' );
+	}
+);
+
+test(
+	'Themes: ein fremdes Theme im Ordner "hello" wird nicht fuer Hello Elementor gehalten',
+	function () {
+		// Sonst waere darauf umgeschaltet und das echte aktive Theme geloescht worden.
+		ASU_Fake_WP::add_theme( 'hello', '', 'Hello World Blog' );
+		ASU_Fake_WP::add_theme( 'astra' );
+		ASU_Fake_WP::$options['stylesheet'] = 'astra';
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( $result );
+
+		Assert::same( 'astra', get_option( 'stylesheet' ), 'Es darf nicht auf ein fremdes Theme umgeschaltet werden.' );
+		Assert::true( isset( ASU_Fake_WP::$themes['astra'] ), 'Das aktive Theme bleibt.' );
+	}
+);
+
+test(
+	'Themes: nach einem fehlgeschlagenen Wechsel wird gar nichts geloescht',
+	function () {
+		// Wenn unklar ist, welches Theme WordPress fuer aktiv haelt, ist Loeschen
+		// zu riskant. Ein falsch geloeschtes Theme kommt nicht zurueck.
+		ASU_Fake_WP::add_hello_elementor();
+		ASU_Fake_WP::add_theme( 'astra' );
+		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
+		ASU_Fake_WP::$options['stylesheet'] = 'astra';
+		ASU_Fake_WP::$switch_theme_works    = false;
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( $result );
+
+		Assert::same( array(), ASU_Fake_WP::$deleted_themes, 'Im unklaren Zustand wird nichts geloescht.' );
+		Assert::true( $result->has_failures(), 'Und der Grund steht im Protokoll.' );
+	}
+);
+
+test(
+	'Inhalte: erwischt auch Seiten mit einem eigenen Post-Status aus einem Plugin',
+	function () {
+		ASU_Fake_WP::$extra_post_stati = array( 'wc-completed', 'in-pruefung' );
+
+		ASU_Fake_WP::add_post( 'page', 'in-pruefung' );
+		ASU_Fake_WP::add_post( 'post', 'publish' );
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->delete_all_posts_and_pages( $result );
+
+		Assert::same( array(), ASU_Fake_WP::$posts, 'Ein eigener Status darf nichts durchrutschen lassen.' );
 	}
 );

@@ -16,6 +16,16 @@ Kompletter Review durch Claude und Codex, danach alle Funde behoben und der Code
 - **`admin_init` feuert auch auf `admin-ajax.php`.** Traf dort eine Anfrage zuerst ein, und das können auch nicht eingeloggte Besucher auslösen, wurde die Notiz verbraucht. Das Plugin deaktivierte sich korrekt, aber niemand sah die Meldung. AJAX, Cron, REST und Autosave werden jetzt übersprungen.
 - **Auto-Entwürfe blieben liegen.** `auto-draft` fehlte in der Liste der Post-Status.
 
+### Nach der Codex-Zweitmeinung zusätzlich abgesichert
+
+- **Sperre gegen eine zweite Aktivierung.** Das Setup hinterlässt die Option `asu_setup_ran` mit Datum. Sie bleibt für immer stehen. Wird das Plugin Monate später versehentlich noch einmal aktiviert, bricht es ab und löscht nichts. Das war der realistische Katastrophenfall: alle inzwischen entstandenen Inhalte wären weg gewesen. Wer den Lauf wirklich wiederholen will, löscht die Option vorher.
+- **`finish()` prüft jetzt `activate_plugins`.** Auch ein Abonnent löst beim Aufruf seines Profils `admin_init` aus. Ohne die Prüfung hätte er das Protokoll verbraucht, das Plugin deaktiviert und die Meldung wäre für alle verschwunden. Dieselbe Fehlerklasse wie die AJAX-Falle.
+- **Ein fremdes Theme im Ordner `hello` gilt nicht mehr als Hello Elementor.** Vorher entschied allein der Ordnername. Das Setup hätte auf ein wildfremdes Theme umgeschaltet und danach das eigentliche Theme endgültig gelöscht. Jetzt muss auch der Theme-Name passen.
+- **Nach einem fehlgeschlagenen Theme-Wechsel wird kein Theme mehr gelöscht.** In dem Zustand ist unklar, was WordPress für aktiv hält, und ein falsch gelöschtes Theme kommt nicht zurück.
+- **Eigene Post-Status von anderen Plugins werden mitgelöscht.** Die feste Statusliste deckte nur WordPress selbst ab, Seiten mit einem Plugin-Status wären liegen geblieben und später wieder aufgetaucht.
+
+Bewusst nicht geändert: Anhänge und Mediendateien werden weiterhin nicht gelöscht, und nach einem einzelnen Fehlschlag läuft das Setup weiter, statt in der Mitte abzubrechen. Ein halb durchgelaufenes Setup ist schlechter als ein vollständiges mit einer Fehlermeldung.
+
 ### Umbau
 
 - **Autoloader statt `require_once`-Liste.** `auto-setup.php` enthält nur noch den Plugin-Header und zwei Aufrufe. Keine globalen Konstanten (`ASU_VERSION`, `ASU_PATH`, `ASU_PLUGIN_FILE`) und keine globale `$asu_plugin`-Variable mehr.
@@ -26,19 +36,20 @@ Kompletter Review durch Claude und Codex, danach alle Funde behoben und der Code
 
 ### Tests und CI
 
-31 Tests in `tests/`, in reinem PHP. Kein Composer, kein PHPUnit, keine WordPress-Testsuite, passend zur Regel "keine Abhängigkeiten". Der Teil von WordPress, den das Plugin anfasst, ist in `tests/bootstrap.php` als Attrappe nachgebaut. Aufruf:
+38 Tests in `tests/`, in reinem PHP. Kein Composer, kein PHPUnit, keine WordPress-Testsuite, passend zur Regel "keine Abhängigkeiten". Der Teil von WordPress, den das Plugin anfasst, ist in `tests/bootstrap.php` als Attrappe nachgebaut. Aufruf:
 
 ```
 php tests/run.php
 ```
 
-Jeder der oben genannten Fehler wurde einmal wieder eingebaut, um zu prüfen, dass auch wirklich ein Test rot wird. Alle sieben wurden gefangen.
+Jede der oben genannten Änderungen wurde einmal wieder rückgängig gemacht, um zu prüfen, dass auch wirklich ein Test rot wird. Alle zwölf wurden gefangen, jeweils von genau dem passenden Test.
 
 `.github/workflows/ci.yml` lintet und testet auf PHP 7.4, 8.3 und 8.4 und vergleicht die Version im Plugin-Header mit der obersten Überschrift dieser Datei.
 
 ### Hinweise
 
-- Die Option `asu_setup_done` heisst jetzt `asu_setup_result` und enthält das Protokoll statt einer 1.
+- Die Option `asu_setup_done` heisst jetzt `asu_setup_result` und enthält das Protokoll statt einer 1. Sie wird nach dem Lesen gelöscht. Dauerhaft bleibt nur `asu_setup_ran` stehen, die Sperre gegen einen zweiten Lauf.
+- **Mediendateien werden nicht gelöscht.** Auf einer frischen Installation gibt es keine, aber die README sagt es jetzt ausdrücklich.
 - Alte Optionen aus früheren Versionen (`asu_base_done`, `asu_container_pending`, `asu_container_ok`, `asu_theme_builder_*`, `elementor_experimentation`) werden nicht mehr benutzt und bleiben auf Testinstallationen als Karteileichen liegen.
 - Übersetzungsdateien gibt es keine. Die Texte sind Deutsch, aber über `__()` austauschbar.
 - Auf einer echten WordPress-Installation ist diese Version noch nicht aktiviert worden. Die Tests laufen gegen eine Attrappe, sie ersetzen keinen Durchlauf auf einer Wegwerf-Installation.
