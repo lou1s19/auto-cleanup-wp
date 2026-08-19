@@ -75,12 +75,12 @@ Auf einer lokalen Test-WordPress geprüft, läuft.
 
 ## 2026-08-19 — Funde aus dem Sichtbarkeits-Check
 
-- Erledigt am 19.08.2026: GPL-2.0-Lizenzdatei ergaenzt (WordPress-Pflicht, vorher lag das
-  Plugin ohne Lizenz oeffentlich, also rechtlich unbenutzbar), dazu Repo-Topics gesetzt.
+- Erledigt am 19.08.2026: GPL-2.0-Lizenzdatei ergänzt (WordPress-Pflicht, vorher lag das
+  Plugin ohne Lizenz öffentlich, also rechtlich unbenutzbar), dazu Repo-Topics gesetzt.
 - Offen: Einreichung ins offizielle Verzeichnis auf wordpress.org. Dort gibt es eine
   eigene Suche mit Millionen Nutzern, auf GitHub sucht niemand nach WordPress-Plugins.
   Nötig sind eine `readme.txt` im WordPress-Format, ein Banner (1544x500), ein Icon
   (256x256) und eine Prüfung des Codes gegen die Plugin-Richtlinien.
 - Wichtig bei der readme.txt: Der Warnhinweis, dass das Plugin beim Aktivieren alle
-  Beiträge und Seiten endgültig loescht, muss ganz oben stehen. Sonst kommt das Plugin
+  Beiträge und Seiten endgültig löscht, muss ganz oben stehen. Sonst kommt das Plugin
   durch die Prüfung, aber die Bewertungen werden schlecht.
