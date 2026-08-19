@@ -70,3 +70,17 @@ Auf einer lokalen Test-WordPress geprüft, läuft.
 - Die Versionsnummer wurde bewusst auf 1.0.3 gesetzt. Die alte Einzeldatei stand auf 1.0.6.
 - Texte sind fest auf Deutsch verdrahtet, ohne WordPress-Übersetzungsfunktionen.
 - Keine automatisierten Tests.
+
+---
+
+### Funde aus dem Sichtbarkeits-Check (2026-08-19)
+
+- Erledigt am 19.08.2026: GPL-2.0-Lizenzdatei ergaenzt (WordPress-Pflicht, vorher lag das
+  Plugin ohne Lizenz oeffentlich, also rechtlich unbenutzbar), dazu Repo-Topics gesetzt.
+- Offen: Einreichung ins offizielle Verzeichnis auf wordpress.org. Dort gibt es eine
+  eigene Suche mit Millionen Nutzern, auf GitHub sucht niemand nach WordPress-Plugins.
+  Noetig sind eine `readme.txt` im WordPress-Format, ein Banner (1544x500), ein Icon
+  (256x256) und eine Pruefung des Codes gegen die Plugin-Richtlinien.
+- Wichtig bei der readme.txt: Der Warnhinweis, dass das Plugin beim Aktivieren alle
+  Beitraege und Seiten endgueltig loescht, muss ganz oben stehen. Sonst kommt das Plugin
+  durch die Pruefung, aber die Bewertungen werden schlecht.
