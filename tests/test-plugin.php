@@ -283,3 +283,73 @@ test(
 		Assert::text_contains( 'notice-', asu_do_action( 'admin_notices' ), 'Jetzt kommt die Meldung.' );
 	}
 );
+
+test(
+	'Frische-Pruefung: eine gewachsene Website wird nicht leergeraeumt',
+	function () {
+		// Der eigentliche Katastrophenfall: jemand aktiviert das Plugin aus Neugier auf
+		// einer Website, die seit Jahren laeuft. Vorher war der Warntext im README die
+		// einzige Bremse.
+		for ( $i = 0; $i < 40; $i++ ) {
+			ASU_Fake_WP::add_post( 'post', 'publish' );
+		}
+
+		ASU_Fake_WP::$deleted_posts = array();
+
+		$result = asu_test_plugin()->run_setup();
+
+		Assert::same( array(), ASU_Fake_WP::$deleted_posts, 'Es darf nichts geloescht werden.' );
+		Assert::true( $result->has_failures(), 'Der Abbruch steht im Protokoll.' );
+		Assert::text_contains( 'frischen Installation', $result->failures()[0]['detail'], 'Und er ist verstaendlich begruendet.' );
+		Assert::false( (bool) get_option( ASU_Plugin::OPTION_RAN ), 'Ein Abbruch darf den Merker nicht setzen.' );
+	}
+);
+
+test(
+	'Frische-Pruefung: eine frische Installation laeuft normal durch',
+	function () {
+		// Zwei Standardinhalte plus eine Datenschutz-Vorlage im Entwurf: genau das, was
+		// WordPress selbst mitbringt. Die Sperre darf hier nicht greifen.
+		ASU_Fake_WP::add_post( 'post', 'publish' );
+		ASU_Fake_WP::add_post( 'page', 'publish' );
+		ASU_Fake_WP::add_post( 'page', 'draft' );
+
+		$result = asu_test_plugin()->run_setup();
+
+		Assert::false( $result->has_failures(), 'Kein Abbruch auf einer frischen Website.' );
+		Assert::true( count( ASU_Fake_WP::$deleted_posts ) >= 3, 'Die Standardinhalte werden geloescht.' );
+	}
+);
+
+test(
+	'Frische-Pruefung: die Konstante hebt die Sperre auf',
+	function () {
+		for ( $i = 0; $i < 40; $i++ ) {
+			ASU_Fake_WP::add_post( 'post', 'publish' );
+		}
+
+		define( ASU_Plugin::OVERRIDE_CONSTANT, true );
+
+		$result = asu_test_plugin()->run_setup();
+
+		Assert::false( $result->has_failures(), 'Mit ausdruecklicher Freigabe laeuft es durch.' );
+		Assert::true( count( ASU_Fake_WP::$deleted_posts ) >= 40, 'Und dann wird auch wirklich geloescht.' );
+	}
+);
+
+test(
+	'Merker: steht schon, bevor das Loeschen beginnt',
+	function () {
+		// Bricht PHP mitten im Loeschen hart ab (Speicher, Zeitlimit), wird der Rest der
+		// Funktion nie erreicht. Stand die Notiz erst am Ende, waere die Sperre gegen eine
+		// zweite Aktivierung nie geschrieben worden, und der Admin haette beim naechsten
+		// Versuch den Rest der Inhalte verloren. Ein echter Abbruch laesst sich im Test
+		// nicht ausloesen, deshalb wird der Zeitpunkt gemessen.
+		asu_test_plugin()->run_setup();
+
+		Assert::true(
+			(bool) ASU_Fake_WP::$ran_at_first_delete,
+			'Die Notiz muss stehen, bevor die erste Zeile geloescht wird.'
+		);
+	}
+);

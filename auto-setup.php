@@ -3,7 +3,7 @@
  * Plugin Name:       Auto Cleanup WP
  * Plugin URI:        https://github.com/lou1s19/auto-cleanup-wp
  * Description:       Räumt eine frische WordPress-Installation auf und richtet sie für Elementor ein. Deaktiviert sich danach selbst. Achtung: löscht Inhalte, Themes und Plugins endgültig.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Louis

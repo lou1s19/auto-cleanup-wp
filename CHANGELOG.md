@@ -2,6 +2,30 @@
 
 Neueste Einträge oben.
 
+## 1.2.0 (2026-09-02)
+
+Zwei Sicherheitsnetze gegen den Fall, der wirklich weh tut: das Plugin wird auf einer
+Website aktiviert, die nicht frisch ist.
+
+- **Frische-Pruefung vor dem Loeschen.** Bisher pruefte das Setup nur, ob es schon einmal
+  gelaufen ist. Aktivierte jemand das Plugin auf einer gewachsenen Website, waren alle
+  Beitraege und Seiten endgueltig weg, ohne Papierkorb und ohne Rueckfrage. Die einzige
+  Bremse war der Warntext im README, und das Repo ist oeffentlich.
+  Liegen mehr als 5 Beitraege und Seiten vor, bricht das Setup jetzt ab und veraendert
+  nichts. Eine frische WordPress-Installation bringt zwei mit, dazu oft eine
+  Datenschutz-Vorlage im Entwurf. Wer trotzdem aufraeumen will, setzt vorher
+  `define( 'ASU_ALLOW_ON_EXISTING_SITE', true );` in die `wp-config.php`.
+- **Die Notiz steht jetzt vor dem Loeschen, nicht danach.** `asu_setup_ran` wurde erst nach
+  dem gesamten Lauf geschrieben. Bricht PHP mittendrin hart ab (Speicherlimit,
+  `max_execution_time`), wurde die Notiz nie gesetzt. Genau der gefaehrliche Fall, eine
+  grosse Website mit tausenden Beitraegen, ist auch der, in dem so ein Abbruch am
+  wahrscheinlichsten ist. Der Admin sieht dann "es ist nichts passiert", aktiviert erneut,
+  und der Rest der Inhalte ist weg. Die Notiz steht jetzt, bevor die erste Zeile geloescht
+  wird.
+- **Vier neue Tests** decken beide Faelle ab, dazu ein `wp_count_posts`-Stub im Bootstrap.
+  Beide Schutzmassnahmen wurden gegengeprueft, indem sie absichtlich ausgehebelt wurden:
+  die Tests melden das jeweils.
+
 ## 1.1.0 – 2026-08-17
 
 Kompletter Review durch Claude und Codex, danach alle Funde behoben und der Code durchgängig objektorientiert aufgebaut. Erstmals mit Tests und CI.
