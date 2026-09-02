@@ -83,6 +83,14 @@ final class ASU_Fake_WP {
 	/** @var array<int, int> Post-IDs, deren Löschen fehlschlägt. */
 	public static $undeletable_posts = array();
 
+	/**
+	 * Wert von asu_setup_ran im Moment des allerersten Loeschaufrufs.
+	 * Damit laesst sich pruefen, ob die Notiz schon steht, bevor geloescht wird.
+	 *
+	 * @var mixed
+	 */
+	public static $ran_at_first_delete = 'nie geloescht';
+
 	/** @var bool Darf switch_theme() das Stylesheet wirklich ändern? */
 	public static $switch_theme_works = true;
 
@@ -102,6 +110,7 @@ final class ASU_Fake_WP {
 		self::$deleted_plugins       = array();
 		self::$deactivated_plugins   = array();
 		self::$deleted_posts         = array();
+		self::$ran_at_first_delete   = 'nie geloescht';
 		self::$actions               = array();
 		self::$activation_hooks      = array();
 		self::$is_multisite          = false;
@@ -332,11 +341,39 @@ function get_posts( array $args ) {
 }
 
 /**
+ * Zaehlt die vorhandenen Beitraege je Status, wie es WordPress tut.
+ *
+ * @param string $type Post-Typ.
+ * @return object
+ */
+function wp_count_posts( $type = 'post' ) {
+	$counts = array();
+
+	foreach ( ASU_Fake_WP::$posts as $post ) {
+		if ( $post['post_type'] !== $type ) {
+			continue;
+		}
+
+		$status = $post['post_status'];
+
+		$counts[ $status ] = isset( $counts[ $status ] ) ? $counts[ $status ] + 1 : 1;
+	}
+
+	return (object) $counts;
+}
+
+/**
  * @param int  $id    Post-ID.
  * @param bool $force Endgültig löschen.
  * @return bool
  */
 function wp_delete_post( $id, $force = false ) {
+	if ( 'nie geloescht' === ASU_Fake_WP::$ran_at_first_delete ) {
+		ASU_Fake_WP::$ran_at_first_delete = isset( ASU_Fake_WP::$options['asu_setup_ran'] )
+			? ASU_Fake_WP::$options['asu_setup_ran']
+			: false;
+	}
+
 	if ( in_array( (int) $id, ASU_Fake_WP::$undeletable_posts, true ) ) {
 		return false;
 	}

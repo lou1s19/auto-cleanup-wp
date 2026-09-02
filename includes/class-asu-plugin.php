@@ -23,6 +23,16 @@ final class ASU_Plugin {
 	 */
 	const OPTION_RAN = 'asu_setup_ran';
 
+	/**
+	 * Ab so vielen vorhandenen Beitraegen und Seiten gilt die Website nicht mehr als frisch.
+	 * Eine neue WordPress-Installation bringt genau zwei mit ("Hallo Welt" und die
+	 * Beispielseite), dazu kommt oft eine Datenschutz-Vorlage im Entwurf.
+	 */
+	const MAX_EXISTING_CONTENT = 5;
+
+	/** Konstante in der wp-config.php, mit der sich die Frische-Pruefung uebergehen laesst. */
+	const OVERRIDE_CONSTANT = 'ASU_ALLOW_ON_EXISTING_SITE';
+
 	/** @var string Pfad zur Hauptdatei des Plugins. */
 	private $file;
 
@@ -115,7 +125,29 @@ final class ASU_Plugin {
 			return $this->store( $result );
 		}
 
-		// Ab hier wird geloescht. Die Notiz kommt am Ende, egal wie der Lauf ausgeht.
+		$existing = $this->existing_content_count();
+
+		if ( $existing > self::MAX_EXISTING_CONTENT && ! $this->override_confirmed() ) {
+			$result->fail(
+				'nicht-frisch',
+				sprintf(
+					'Abgebrochen: Auf dieser Website liegen %d Beitraege und Seiten, das sieht nicht nach einer frischen Installation aus. Es wurde nichts veraendert. Wer trotzdem aufraeumen will, setzt vorher define( \'%s\', true ); in die wp-config.php.',
+					$existing,
+					self::OVERRIDE_CONSTANT
+				)
+			);
+
+			return $this->store( $result );
+		}
+
+		// Der Merker steht bewusst VOR dem Loeschen. Bricht PHP mitten im Lauf hart ab
+		// (Speicher, max_execution_time), waere er sonst nie geschrieben worden. Der Admin
+		// sieht dann "es ist nichts passiert", aktiviert erneut, und der Rest der Inhalte
+		// waere weg. Genau der gefaehrliche Fall, eine grosse Website, ist auch der, in dem
+		// so ein Abbruch am wahrscheinlichsten ist.
+		update_option( self::OPTION_RAN, gmdate( 'Y-m-d H:i' ) . ' UTC', false );
+
+		// Ab hier wird geloescht.
 		try {
 			$this->cleanup->delete_all_posts_and_pages( $result );
 
@@ -134,8 +166,6 @@ final class ASU_Plugin {
 			// PHP-Fehler wie TypeError hier landen.
 			$result->fail( 'abbruch', sprintf( 'Unerwarteter Fehler: %s', $e->getMessage() ) );
 		}
-
-		update_option( self::OPTION_RAN, gmdate( 'Y-m-d H:i' ) . ' UTC', false );
 
 		return $this->store( $result );
 	}
@@ -219,6 +249,40 @@ final class ASU_Plugin {
 		}
 
 		echo '</div>';
+	}
+
+	/**
+	 * Zaehlt, was schon auf der Website liegt.
+	 *
+	 * @return int
+	 */
+	private function existing_content_count() {
+		$count = 0;
+
+		foreach ( array( 'post', 'page' ) as $type ) {
+			$counts = wp_count_posts( $type );
+
+			if ( ! is_object( $counts ) ) {
+				continue;
+			}
+
+			foreach ( get_object_vars( $counts ) as $status => $number ) {
+				if ( 'auto-draft' === $status ) {
+					continue;
+				}
+
+				$count += (int) $number;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * @return bool True, wenn der Betreiber das Aufraeumen ausdruecklich erlaubt hat.
+	 */
+	private function override_confirmed() {
+		return defined( self::OVERRIDE_CONSTANT ) && constant( self::OVERRIDE_CONSTANT );
 	}
 
 	/**

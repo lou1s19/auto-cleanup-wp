@@ -35,6 +35,7 @@ Header und Footer legt das Plugin **nicht** an. Das macht man von Hand im Elemen
 ## Wo das Plugin abbricht
 
 - **Multisite.** In einem Netzwerk teilen sich alle Sites dieselben Theme- und Plugin-Dateien. Ein Setup für eine einzelne Site darf sie nicht löschen. Das Plugin bricht ab, verändert nichts und sagt im Backend, warum.
+- **Website ist nicht frisch.** Liegen mehr als 5 Beitraege und Seiten vor, bricht das Setup ab und veraendert nichts. Eine neue WordPress-Installation bringt zwei mit, dazu oft eine Datenschutz-Vorlage im Entwurf. Wer das Plugin trotzdem auf einer bestehenden Website einsetzen will, setzt vorher `define( 'ASU_ALLOW_ON_EXISTING_SITE', true );` in die `wp-config.php`. Vorher unbedingt ein vollstaendiges Backup.
 - **Zweite Aktivierung.** Nach dem ersten Lauf bleibt die Option `asu_setup_ran` mit Datum in der Datenbank stehen, dauerhaft. Wird das Plugin später noch einmal aktiviert, bricht es ab und löscht nichts. Das schützt davor, dass eine gewachsene Website Monate später aus Versehen leergeräumt wird. Wer den Lauf wirklich wiederholen will, löscht die Option vorher von Hand.
 - **Fehlgeschlagener Theme-Wechsel.** Lässt sich nicht auf Hello Elementor umschalten, wird kein einziges Theme gelöscht. In dem Zustand ist zu unklar, was noch gebraucht wird.
 
