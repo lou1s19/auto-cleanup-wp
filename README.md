@@ -103,6 +103,10 @@ find . -name '*.php' | xargs -n1 php -l
 - Multisite-Netzwerke
 - Alles, wo Inhalte drin sind, die noch gebraucht werden
 
+## Entwicklung
+
+Aufbau, Konventionen und die Regeln für Änderungen am Löschpfad stehen in `DEVELOPMENT.md`.
+
 ## Lizenz
 
-MIT
+GPL-2.0-or-later, siehe `LICENSE`.

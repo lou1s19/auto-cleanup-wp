@@ -28,7 +28,7 @@ Website aktiviert, die nicht frisch ist.
 
 ## 1.1.0 – 2026-08-17
 
-Kompletter Review durch Claude und Codex, danach alle Funde behoben und der Code durchgängig objektorientiert aufgebaut. Erstmals mit Tests und CI.
+Kompletter Review, danach alle Funde behoben und der Code durchgängig objektorientiert aufgebaut. Erstmals mit Tests und CI.
 
 ### Behobene Fehler
 
@@ -40,7 +40,7 @@ Kompletter Review durch Claude und Codex, danach alle Funde behoben und der Code
 - **`admin_init` feuert auch auf `admin-ajax.php`.** Traf dort eine Anfrage zuerst ein, und das können auch nicht eingeloggte Besucher auslösen, wurde die Notiz verbraucht. Das Plugin deaktivierte sich korrekt, aber niemand sah die Meldung. AJAX, Cron, REST und Autosave werden jetzt übersprungen.
 - **Auto-Entwürfe blieben liegen.** `auto-draft` fehlte in der Liste der Post-Status.
 
-### Nach der Codex-Zweitmeinung zusätzlich abgesichert
+### Im zweiten Durchgang zusätzlich abgesichert
 
 - **Sperre gegen eine zweite Aktivierung.** Das Setup hinterlässt die Option `asu_setup_ran` mit Datum. Sie bleibt für immer stehen. Wird das Plugin Monate später versehentlich noch einmal aktiviert, bricht es ab und löscht nichts. Das war der realistische Katastrophenfall: alle inzwischen entstandenen Inhalte wären weg gewesen. Wer den Lauf wirklich wiederholen will, löscht die Option vorher.
 - **`finish()` prüft jetzt `activate_plugins`.** Auch ein Abonnent löst beim Aufruf seines Profils `admin_init` aus. Ohne die Prüfung hätte er das Protokoll verbraucht, das Plugin deaktiviert und die Meldung wäre für alle verschwunden. Dieselbe Fehlerklasse wie die AJAX-Falle.
