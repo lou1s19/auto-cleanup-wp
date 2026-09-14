@@ -2,6 +2,25 @@
 
 Neueste Einträge oben.
 
+## 1.2.1 (2026-09-14)
+
+Aufräumarbeit am Code, das Verhalten ist unverändert.
+
+- Die Doc-Blöcke über jeder Methode sind raus. Was sie beschrieben haben, sagen
+  jetzt echte PHP-Typen in den Signaturen: typisierte Eigenschaften, Parameter-
+  und Rückgabetypen (PHP 7.4).
+- Übrig sind nur noch Kommentare, die eine Begründung liefern: warum der Merker
+  vor dem Löschen steht, warum der Theme-Name geprüft wird und nicht der
+  Ordnername, warum der Elementor-Slug `elementor_header_footer` heisst, warum
+  `finish()` Hintergrund-Aufrufe überspringt.
+- `load_once()` und die Prüfung in `finish()` zusammengezogen, `$wp_rewrite`
+  wird nur noch einmal geprüft.
+- Lizenz vereinheitlicht: `LICENSE` war GPL-2.0, Plugin-Header und README
+  nannten MIT. Es gilt die GPL.
+- Die Entwicklerdoku heisst jetzt `DEVELOPMENT.md` und ist im README verlinkt.
+
+Alle 42 Tests bleiben grün.
+
 ## 1.2.0 (2026-09-02)
 
 Zwei Sicherheitsnetze gegen den Fall, der wirklich weh tut: das Plugin wird auf einer
