@@ -16,8 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Die einzige Datei, die von Hand geladen wird. Alles Weitere holt der
-// Autoloader, sobald eine ASU_-Klasse gebraucht wird.
 require_once __DIR__ . '/includes/class-asu-autoloader.php';
 
 ASU_Autoloader::register( __DIR__ . '/includes' );
