@@ -6,8 +6,6 @@ WordPress-Plugin, das eine frische Installation einrichtet und sich danach selbs
 - **Zielumgebung:** WordPress 6.x, PHP 7.4 oder neuer, Hello Elementor und Elementor. Elementor Pro wird nicht vorausgesetzt.
 - **Tests:** `php tests/run.php`. Reines PHP, WordPress ist in `tests/bootstrap.php` als Attrappe nachgebaut.
 - **Syntaxprüfung:** `find . -name '*.php' | xargs -n1 php -l`
-- **PHP auf diesem Mac:** nicht im PATH, aber die App Local bringt eines mit. Finden mit
-  `find ~/Library/Application\ Support/Local/lightning-services -name php -type f -perm +111 | head -1`
 - **CI:** `.github/workflows/ci.yml`, lintet und testet auf PHP 7.4, 8.3 und 8.4 und vergleicht die Version im Plugin-Header mit der obersten Überschrift in `CHANGELOG.md`.
 
 ## Aufbau
@@ -16,7 +14,7 @@ WordPress-Plugin, das eine frische Installation einrichtet und sich danach selbs
 
 `ASU_Plugin` steuert den Ablauf und meldet die Hooks an. Die anderen Klassen machen jeweils eine Sache und kennen einander nicht, `ASU_Plugin` reicht durch, was gebraucht wird. `ASU_Result` ist das Protokoll, das jeder Schritt füllt.
 
-## Regeln für dieses Projekt
+## Konventionen
 
 - **Einfach halten hat Vorrang.** Keine Abstraktion einbauen, die nur einen einzigen Aufrufer hat und nichts einspart. Der Autoloader und `ASU_Result` sind die Ausnahmen: der eine ersetzt eine Pflegeliste, der andere macht die Erfolgsmeldung überhaupt erst ehrlich.
 - **Eine Klasse pro Datei**, Dateiname `class-asu-<name>.php`, Klassenname `ASU_<Name>`. Der Autoloader leitet den Dateinamen aus dem Klassennamen ab, andere Namen werden nicht gefunden.
@@ -26,4 +24,4 @@ WordPress-Plugin, das eine frische Installation einrichtet und sich danach selbs
 - **Rückgabewerte von WordPress prüfen, nicht auf Exceptions warten.** `delete_theme()`, `delete_plugins()` und `wp_insert_post()` liefern im Fehlerfall ein `WP_Error`, sie werfen nichts. Dafür gibt es `ASU_Result::catch_wp_error()`.
 - **Fremde Bezeichner nachschlagen, nicht raten.** Der Slug `elementor_full_width` sah plausibel aus, existierte aber nie, und WordPress ignoriert unbekannte Template-Slugs stillschweigend. Alles, was aus Elementor stammt, steht als Konstante in `ASU_Elementor`.
 - **Neue Funktion oder Fehlerbehebung heißt: Test dazu.** Ein Test, der nicht rot wird, wenn man den Fehler wieder einbaut, zählt nicht.
-- Das automatische Anlegen von Theme-Builder-Templates wurde bewusst entfernt (siehe CHANGELOG 1.0.3). Nicht ohne Not wieder einbauen. Der alte Code steht in Commit 8df7c15.
+- Das automatische Anlegen von Theme-Builder-Templates wurde bewusst entfernt (siehe CHANGELOG 1.0.3). Nicht ohne Not wieder einbauen. Der alte Code steht in Commit 061db66.
