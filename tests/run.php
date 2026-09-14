@@ -1,10 +1,6 @@
 <?php
 /**
- * Startet die Testsuite. Aufruf aus dem Projekt-Root:
- *
- *   php tests/run.php
- *
- * @package AutoCleanupWP
+ * php tests/run.php
  */
 
 require_once __DIR__ . '/bootstrap.php';

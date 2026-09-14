@@ -1,142 +1,95 @@
 <?php
 /**
- * Attrappe von WordPress.
- *
- * Das Plugin hat bewusst keine Abhängigkeiten, also gibt es hier auch kein
- * PHPUnit und keine WordPress-Testsuite. Stattdessen wird genau der Teil von
- * WordPress nachgebaut, den das Plugin anfasst. Das reicht, um zu prüfen, was
- * hier wirklich zählt: welche Themes gelöscht werden, welche Optionen
- * geschrieben werden und was passiert, wenn WordPress einen Fehler meldet.
- *
- * @package AutoCleanupWP
+ * Nachbau des Teils von WordPress, den das Plugin anfasst. Kein PHPUnit und
+ * keine WordPress-Testsuite, weil das Plugin selbst ohne Abhaengigkeiten auskommt.
  */
 
 define( 'ABSPATH', __DIR__ . '/fake-wp/' );
 
-/**
- * Der gesamte Zustand der Attrappe. Vor jedem Test zurückgesetzt.
- */
 final class ASU_Fake_WP {
 
-	/** @var array<string, mixed> */
-	public static $options = array();
+	public static array $options = array();
 
-	/** @var array<int, array<string, string>> */
-	public static $posts = array();
+	public static array $posts = array();
 
-	/** @var array<int, array<string, mixed>> */
-	public static $post_meta = array();
+	public static array $post_meta = array();
 
-	/** @var array<string, ASU_Fake_Theme> */
-	public static $themes = array();
+	public static array $themes = array();
 
-	/** @var array<string, array<string, string>> */
-	public static $plugins = array();
+	public static array $plugins = array();
 
-	/** @var array<int, string> */
-	public static $deleted_themes = array();
+	public static array $deleted_themes = array();
 
-	/** @var array<int, string> */
-	public static $deleted_plugins = array();
+	public static array $deleted_plugins = array();
 
-	/** @var array<int, string> */
-	public static $deactivated_plugins = array();
+	public static array $deactivated_plugins = array();
 
-	/** @var array<int, int> */
-	public static $deleted_posts = array();
+	public static array $deleted_posts = array();
 
-	/** @var array<string, array<int, callable>> */
-	public static $actions = array();
+	public static array $actions = array();
 
-	/** @var array<string, callable> */
-	public static $activation_hooks = array();
+	public static array $activation_hooks = array();
 
-	/** @var bool */
-	public static $is_multisite = false;
+	public static bool $is_multisite = false;
 
-	/** @var bool */
-	public static $doing_ajax = false;
+	public static bool $doing_ajax = false;
 
-	/** @var bool */
-	public static $doing_cron = false;
+	public static bool $doing_cron = false;
 
-	/** @var bool */
-	public static $can_manage_options = true;
+	public static bool $can_manage_options = true;
 
-	/** @var int */
-	public static $next_post_id = 1;
+	public static int $next_post_id = 1;
 
-	/** @var bool Wurden die Rewrite-Regeln neu geschrieben? */
-	public static $rules_flushed = false;
+	public static bool $rules_flushed = false;
 
-	// --- Steuerung von Fehlerfällen -------------------------------------
+	// Ab hier: Schalter, mit denen ein Test einen Fehlerfall erzwingt.
 
-	/** @var array<string, mixed> Stylesheet => Rückgabewert für delete_theme(). */
-	public static $delete_theme_returns = array();
+	public static array $delete_theme_returns = array();
 
-	/** @var mixed Rückgabewert für delete_plugins(). */
 	public static $delete_plugins_returns = true;
 
-	/** @var mixed Rückgabewert für wp_insert_post(). Null = normal anlegen. */
 	public static $insert_post_returns = null;
 
-	/** @var array<int, int> Post-IDs, deren Löschen fehlschlägt. */
-	public static $undeletable_posts = array();
+	public static array $undeletable_posts = array();
 
-	/**
-	 * Wert von asu_setup_ran im Moment des allerersten Loeschaufrufs.
-	 * Damit laesst sich pruefen, ob die Notiz schon steht, bevor geloescht wird.
-	 *
-	 * @var mixed
-	 */
+	// Haelt fest, was asu_setup_ran im Moment des ersten Loeschaufrufs enthielt.
+	// Nur so laesst sich pruefen, dass die Notiz vor dem Loeschen steht.
 	public static $ran_at_first_delete = 'nie geloescht';
 
-	/** @var bool Darf switch_theme() das Stylesheet wirklich ändern? */
-	public static $switch_theme_works = true;
+	public static bool $switch_theme_works = true;
 
-	/** @var array<int, string> Zusaetzlich angemeldete Post-Status. */
-	public static $extra_post_stati = array();
+	public static array $extra_post_stati = array();
 
-	/**
-	 * @return void
-	 */
-	public static function reset() {
-		self::$options               = array();
-		self::$posts                 = array();
-		self::$post_meta             = array();
-		self::$themes                = array();
-		self::$plugins               = array();
-		self::$deleted_themes        = array();
-		self::$deleted_plugins       = array();
-		self::$deactivated_plugins   = array();
-		self::$deleted_posts         = array();
-		self::$ran_at_first_delete   = 'nie geloescht';
-		self::$actions               = array();
-		self::$activation_hooks      = array();
-		self::$is_multisite          = false;
-		self::$doing_ajax            = false;
-		self::$doing_cron            = false;
-		self::$can_manage_options    = true;
-		self::$next_post_id          = 1;
-		self::$rules_flushed         = false;
-		self::$delete_theme_returns  = array();
+	public static function reset(): void {
+		self::$options                = array();
+		self::$posts                  = array();
+		self::$post_meta              = array();
+		self::$themes                 = array();
+		self::$plugins                = array();
+		self::$deleted_themes         = array();
+		self::$deleted_plugins        = array();
+		self::$deactivated_plugins    = array();
+		self::$deleted_posts          = array();
+		self::$ran_at_first_delete    = 'nie geloescht';
+		self::$actions                = array();
+		self::$activation_hooks       = array();
+		self::$is_multisite           = false;
+		self::$doing_ajax             = false;
+		self::$doing_cron             = false;
+		self::$can_manage_options     = true;
+		self::$next_post_id           = 1;
+		self::$rules_flushed          = false;
+		self::$delete_theme_returns   = array();
 		self::$delete_plugins_returns = true;
-		self::$insert_post_returns   = null;
-		self::$undeletable_posts     = array();
-		self::$switch_theme_works    = true;
-		self::$extra_post_stati      = array();
+		self::$insert_post_returns    = null;
+		self::$undeletable_posts      = array();
+		self::$switch_theme_works     = true;
+		self::$extra_post_stati       = array();
 
 		$GLOBALS['wp_rewrite'] = new ASU_Fake_Rewrite();
 	}
 
-	/**
-	 * Legt einen Beitrag oder eine Seite an.
-	 *
-	 * @param string $type   post oder page.
-	 * @param string $status Post-Status.
-	 * @return int
-	 */
-	public static function add_post( $type, $status ) {
+	public static function add_post( string $type, string $status ): int {
 		$id                 = self::$next_post_id++;
 		self::$posts[ $id ] = array(
 			'post_type'   => $type,
@@ -146,15 +99,7 @@ final class ASU_Fake_WP {
 		return $id;
 	}
 
-	/**
-	 * Legt ein Theme an.
-	 *
-	 * @param string $stylesheet Verzeichnisname.
-	 * @param string $template   Parent-Theme, leer für ein eigenständiges Theme.
-	 * @param string $name       Theme-Name, leer heisst: aus dem Ordnernamen ableiten.
-	 * @return void
-	 */
-	public static function add_theme( $stylesheet, $template = '', $name = '' ) {
+	public static function add_theme( string $stylesheet, string $template = '', string $name = '' ): void {
 		self::$themes[ $stylesheet ] = new ASU_Fake_Theme(
 			$stylesheet,
 			'' === $template ? $stylesheet : $template,
@@ -162,157 +107,93 @@ final class ASU_Fake_WP {
 		);
 	}
 
-	/**
-	 * Legt Hello Elementor an, mit dem Namen, den das echte Theme traegt.
-	 *
-	 * @param string $stylesheet Verzeichnisname.
-	 * @return void
-	 */
-	public static function add_hello_elementor( $stylesheet = 'hello-elementor' ) {
+	public static function add_hello_elementor( string $stylesheet = 'hello-elementor' ): void {
 		self::add_theme( $stylesheet, '', 'Hello Elementor' );
 	}
 }
 
-/**
- * Ersatz für WP_Theme.
- */
 final class ASU_Fake_Theme {
 
-	/** @var string */
-	private $stylesheet;
+	private string $stylesheet;
 
-	/** @var string */
-	private $template;
+	private string $template;
 
-	/** @var string */
-	private $name;
+	private string $name;
 
-	/**
-	 * @param string $stylesheet Verzeichnisname.
-	 * @param string $template   Parent-Theme.
-	 * @param string $name       Theme-Name aus der style.css.
-	 */
-	public function __construct( $stylesheet, $template, $name = '' ) {
+	public function __construct( string $stylesheet, string $template, string $name = '' ) {
 		$this->stylesheet = $stylesheet;
 		$this->template   = $template;
 		$this->name       = '' === $name ? $stylesheet : $name;
 	}
 
-	/**
-	 * @param string $header Kopfzeile aus der style.css.
-	 * @return string
-	 */
-	public function get( $header ) {
+	public function get( string $header ): string {
 		return 'Name' === $header ? $this->name : '';
 	}
 
-	/** @return bool */
-	public function exists() {
+	public function exists(): bool {
 		return isset( ASU_Fake_WP::$themes[ $this->stylesheet ] );
 	}
 
-	/** @return string */
-	public function get_stylesheet() {
+	public function get_stylesheet(): string {
 		return $this->stylesheet;
 	}
 
-	/** @return string */
-	public function get_template() {
+	public function get_template(): string {
 		return $this->template;
 	}
 }
 
-/**
- * Ersatz für WP_Rewrite.
- */
 final class ASU_Fake_Rewrite {
 
-	/** @var string */
-	public $permalink_structure = '';
+	public string $permalink_structure = '';
 
-	/**
-	 * @param string $structure Neue Struktur.
-	 * @return void
-	 */
-	public function set_permalink_structure( $structure ) {
-		$this->permalink_structure = $structure;
+	public function set_permalink_structure( string $structure ): void {
+		$this->permalink_structure                   = $structure;
 		ASU_Fake_WP::$options['permalink_structure'] = $structure;
 	}
 
-	/** @return void */
-	public function flush_rules() {
+	public function flush_rules(): void {
 		ASU_Fake_WP::$rules_flushed = true;
 	}
 }
 
-/**
- * Ersatz für WP_Error.
- */
 class WP_Error {
 
-	/** @var string */
-	private $code;
+	private string $code;
 
-	/** @var string */
-	private $message;
+	private string $message;
 
-	/**
-	 * @param string $code    Fehlercode.
-	 * @param string $message Fehlertext.
-	 */
-	public function __construct( $code = '', $message = '' ) {
+	public function __construct( string $code = '', string $message = '' ) {
 		$this->code    = $code;
 		$this->message = $message;
 	}
 
-	/** @return string */
-	public function get_error_code() {
+	public function get_error_code(): string {
 		return $this->code;
 	}
 
-	/** @return string */
-	public function get_error_message() {
+	public function get_error_message(): string {
 		return $this->message;
 	}
 }
 
-// --- Funktionen von WordPress ------------------------------------------
-
-/**
- * @param mixed $thing Zu prüfender Wert.
- * @return bool
- */
-function is_wp_error( $thing ) {
+function is_wp_error( $thing ): bool {
 	return $thing instanceof WP_Error;
 }
 
-/**
- * @param string $option  Name.
- * @param mixed  $default Rückfallwert.
- * @return mixed
- */
-function get_option( $option, $default = false ) {
+function get_option( string $option, $default = false ) {
 	return array_key_exists( $option, ASU_Fake_WP::$options ) ? ASU_Fake_WP::$options[ $option ] : $default;
 }
 
-/**
- * @param string $option   Name.
- * @param mixed  $value    Wert.
- * @param mixed  $autoload Wird hier nicht gebraucht.
- * @return bool
- */
-function update_option( $option, $value, $autoload = null ) {
-	$changed                             = ! array_key_exists( $option, ASU_Fake_WP::$options ) || ASU_Fake_WP::$options[ $option ] !== $value;
-	ASU_Fake_WP::$options[ $option ]     = $value;
+// Liefert wie das Original false, wenn sich der Wert nicht geaendert hat.
+function update_option( string $option, $value, $autoload = null ): bool {
+	$changed                         = ! array_key_exists( $option, ASU_Fake_WP::$options ) || ASU_Fake_WP::$options[ $option ] !== $value;
+	ASU_Fake_WP::$options[ $option ] = $value;
 
 	return $changed;
 }
 
-/**
- * @param string $option Name.
- * @return bool
- */
-function delete_option( $option ) {
+function delete_option( string $option ): bool {
 	if ( ! array_key_exists( $option, ASU_Fake_WP::$options ) ) {
 		return false;
 	}
@@ -322,11 +203,7 @@ function delete_option( $option ) {
 	return true;
 }
 
-/**
- * @param array<string, mixed> $args Abfrage.
- * @return array<int, int>
- */
-function get_posts( array $args ) {
+function get_posts( array $args ): array {
 	$types    = isset( $args['post_type'] ) ? (array) $args['post_type'] : array( 'post' );
 	$statuses = isset( $args['post_status'] ) ? (array) $args['post_status'] : array( 'publish' );
 	$found    = array();
@@ -340,13 +217,7 @@ function get_posts( array $args ) {
 	return $found;
 }
 
-/**
- * Zaehlt die vorhandenen Beitraege je Status, wie es WordPress tut.
- *
- * @param string $type Post-Typ.
- * @return object
- */
-function wp_count_posts( $type = 'post' ) {
+function wp_count_posts( string $type = 'post' ): object {
 	$counts = array();
 
 	foreach ( ASU_Fake_WP::$posts as $post ) {
@@ -362,16 +233,9 @@ function wp_count_posts( $type = 'post' ) {
 	return (object) $counts;
 }
 
-/**
- * @param int  $id    Post-ID.
- * @param bool $force Endgültig löschen.
- * @return bool
- */
-function wp_delete_post( $id, $force = false ) {
+function wp_delete_post( $id, bool $force = false ): bool {
 	if ( 'nie geloescht' === ASU_Fake_WP::$ran_at_first_delete ) {
-		ASU_Fake_WP::$ran_at_first_delete = isset( ASU_Fake_WP::$options['asu_setup_ran'] )
-			? ASU_Fake_WP::$options['asu_setup_ran']
-			: false;
+		ASU_Fake_WP::$ran_at_first_delete = ASU_Fake_WP::$options['asu_setup_ran'] ?? false;
 	}
 
 	if ( in_array( (int) $id, ASU_Fake_WP::$undeletable_posts, true ) ) {
@@ -384,12 +248,7 @@ function wp_delete_post( $id, $force = false ) {
 	return true;
 }
 
-/**
- * @param array<string, mixed> $data     Daten der Seite.
- * @param bool                 $wp_error WP_Error statt 0 im Fehlerfall.
- * @return int|WP_Error
- */
-function wp_insert_post( array $data, $wp_error = false ) {
+function wp_insert_post( array $data, bool $wp_error = false ) {
 	if ( null !== ASU_Fake_WP::$insert_post_returns ) {
 		return ASU_Fake_WP::$insert_post_returns;
 	}
@@ -397,58 +256,36 @@ function wp_insert_post( array $data, $wp_error = false ) {
 	$id = ASU_Fake_WP::$next_post_id++;
 
 	ASU_Fake_WP::$posts[ $id ] = array(
-		'post_type'   => isset( $data['post_type'] ) ? $data['post_type'] : 'post',
-		'post_status' => isset( $data['post_status'] ) ? $data['post_status'] : 'draft',
-		'post_title'  => isset( $data['post_title'] ) ? $data['post_title'] : '',
+		'post_type'   => $data['post_type'] ?? 'post',
+		'post_status' => $data['post_status'] ?? 'draft',
+		'post_title'  => $data['post_title'] ?? '',
 	);
 
 	return $id;
 }
 
-/**
- * @param int    $id    Post-ID.
- * @param string $key   Meta-Schlüssel.
- * @param mixed  $value Wert.
- * @return bool
- */
-function update_post_meta( $id, $key, $value ) {
+function update_post_meta( $id, string $key, $value ): bool {
 	ASU_Fake_WP::$post_meta[ $id ][ $key ] = $value;
 
 	return true;
 }
 
-/**
- * @param int    $id     Post-ID.
- * @param string $key    Meta-Schlüssel.
- * @param bool   $single Einzelwert.
- * @return mixed
- */
-function get_post_meta( $id, $key = '', $single = false ) {
-	return isset( ASU_Fake_WP::$post_meta[ $id ][ $key ] ) ? ASU_Fake_WP::$post_meta[ $id ][ $key ] : '';
+function get_post_meta( $id, string $key = '', bool $single = false ) {
+	return ASU_Fake_WP::$post_meta[ $id ][ $key ] ?? '';
 }
 
-/**
- * @return array<int, string>
- */
-function get_post_stati() {
+function get_post_stati(): array {
 	return array_merge(
 		array( 'publish', 'future', 'draft', 'pending', 'private', 'trash', 'auto-draft', 'inherit' ),
 		ASU_Fake_WP::$extra_post_stati
 	);
 }
 
-/**
- * @return array<string, ASU_Fake_Theme>
- */
-function wp_get_themes() {
+function wp_get_themes(): array {
 	return ASU_Fake_WP::$themes;
 }
 
-/**
- * @param string $stylesheet Verzeichnisname, leer für das aktive Theme.
- * @return ASU_Fake_Theme
- */
-function wp_get_theme( $stylesheet = '' ) {
+function wp_get_theme( string $stylesheet = '' ): ASU_Fake_Theme {
 	if ( '' === $stylesheet ) {
 		$stylesheet = get_option( 'stylesheet', '' );
 	}
@@ -457,15 +294,12 @@ function wp_get_theme( $stylesheet = '' ) {
 		return ASU_Fake_WP::$themes[ $stylesheet ];
 	}
 
-	// Ein nicht installiertes Theme: exists() liefert false.
+	// Wie im Original: ein nicht installiertes Theme liefert ein Objekt,
+	// dessen exists() false ist, nicht null.
 	return new ASU_Fake_Theme( $stylesheet, $stylesheet );
 }
 
-/**
- * @param string $stylesheet Verzeichnisname.
- * @return void
- */
-function switch_theme( $stylesheet ) {
+function switch_theme( string $stylesheet ): void {
 	if ( ! ASU_Fake_WP::$switch_theme_works ) {
 		return;
 	}
@@ -477,11 +311,7 @@ function switch_theme( $stylesheet ) {
 	ASU_Fake_WP::$options['template'] = $theme->get_template();
 }
 
-/**
- * @param string $stylesheet Verzeichnisname.
- * @return bool|null|WP_Error
- */
-function delete_theme( $stylesheet ) {
+function delete_theme( string $stylesheet ) {
 	if ( array_key_exists( $stylesheet, ASU_Fake_WP::$delete_theme_returns ) ) {
 		return ASU_Fake_WP::$delete_theme_returns[ $stylesheet ];
 	}
@@ -492,28 +322,16 @@ function delete_theme( $stylesheet ) {
 	return true;
 }
 
-/**
- * @return array<string, array<string, string>>
- */
-function get_plugins() {
+function get_plugins(): array {
 	return ASU_Fake_WP::$plugins;
 }
 
-/**
- * @param string|array<int, string> $plugins Plugin-Dateien.
- * @param bool                      $silent  Ohne Hooks.
- * @return void
- */
-function deactivate_plugins( $plugins, $silent = false ) {
+function deactivate_plugins( $plugins, bool $silent = false ): void {
 	foreach ( (array) $plugins as $plugin ) {
 		ASU_Fake_WP::$deactivated_plugins[] = $plugin;
 	}
 }
 
-/**
- * @param array<int, string> $plugins Plugin-Dateien.
- * @return bool|null|WP_Error
- */
 function delete_plugins( array $plugins ) {
 	if ( true !== ASU_Fake_WP::$delete_plugins_returns ) {
 		return ASU_Fake_WP::$delete_plugins_returns;
@@ -527,54 +345,27 @@ function delete_plugins( array $plugins ) {
 	return true;
 }
 
-/**
- * @return bool
- */
-function WP_Filesystem() {
+function WP_Filesystem(): bool {
 	return true;
 }
 
-/**
- * @param string $file Pfad zur Plugin-Datei.
- * @return string
- */
-function plugin_basename( $file ) {
+function plugin_basename( string $file ): string {
 	return basename( dirname( $file ) ) . '/' . basename( $file );
 }
 
-/**
- * @param string   $file     Plugin-Datei.
- * @param callable $callback Rückruf.
- * @return void
- */
-function register_activation_hook( $file, $callback ) {
+function register_activation_hook( string $file, $callback ): void {
 	ASU_Fake_WP::$activation_hooks[ plugin_basename( $file ) ] = $callback;
 }
 
-/**
- * @param string   $hook     Name des Hooks.
- * @param callable $callback Rückruf.
- * @param int      $priority Priorität.
- * @param int      $args     Anzahl Argumente.
- * @return void
- */
-function add_action( $hook, $callback, $priority = 10, $args = 1 ) {
+function add_action( string $hook, $callback, int $priority = 10, int $args = 1 ): void {
 	ASU_Fake_WP::$actions[ $hook ][] = $callback;
 }
 
-/**
- * @param string $hook Name des Hooks.
- * @return bool
- */
-function asu_has_action( $hook ) {
+function asu_has_action( string $hook ): bool {
 	return ! empty( ASU_Fake_WP::$actions[ $hook ] );
 }
 
-/**
- * @param string $hook Name des Hooks.
- * @return string Alles, was die Rückrufe ausgegeben haben.
- */
-function asu_do_action( $hook ) {
+function asu_do_action( string $hook ): string {
 	ob_start();
 
 	foreach ( ASU_Fake_WP::$actions[ $hook ] ?? array() as $callback ) {
@@ -584,64 +375,38 @@ function asu_do_action( $hook ) {
 	return (string) ob_get_clean();
 }
 
-/**
- * @param string $capability Fähigkeit.
- * @return bool
- */
-function current_user_can( $capability ) {
+function current_user_can( string $capability ): bool {
 	return ASU_Fake_WP::$can_manage_options;
 }
 
-/** @return bool */
-function is_multisite() {
+function is_multisite(): bool {
 	return ASU_Fake_WP::$is_multisite;
 }
 
-/** @return bool */
-function wp_doing_ajax() {
+function wp_doing_ajax(): bool {
 	return ASU_Fake_WP::$doing_ajax;
 }
 
-/** @return bool */
-function wp_doing_cron() {
+function wp_doing_cron(): bool {
 	return ASU_Fake_WP::$doing_cron;
 }
 
-/**
- * @param string $text   Text.
- * @param string $domain Text Domain.
- * @return string
- */
-function __( $text, $domain = 'default' ) {
+function __( string $text, string $domain = 'default' ): string {
 	return $text;
 }
 
-/**
- * @param string $text Text.
- * @return string
- */
-function esc_html( $text ) {
+function esc_html( $text ): string {
 	return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
 }
 
-/**
- * @param string $text Text.
- * @return string
- */
-function esc_attr( $text ) {
+function esc_attr( $text ): string {
 	return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
 }
 
-/**
- * @param string $text   Text.
- * @param string $domain Text Domain.
- * @return string
- */
-function esc_html__( $text, $domain = 'default' ) {
+function esc_html__( string $text, string $domain = 'default' ): string {
 	return esc_html( $text );
 }
 
-// Der Autoloader des Plugins lädt die Klassen, genau wie im Echtbetrieb.
 require_once dirname( __DIR__ ) . '/includes/class-asu-autoloader.php';
 
 ASU_Autoloader::register( dirname( __DIR__ ) . '/includes' );

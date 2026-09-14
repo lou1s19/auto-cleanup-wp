@@ -1,9 +1,5 @@
 <?php
-/**
- * Tests für ASU_Site_Setup und ASU_Elementor.
- *
- * @package AutoCleanupWP
- */
+// Tests fuer ASU_Site_Setup und ASU_Elementor.
 
 test(
 	'Startseite: bekommt den Template-Slug, den Elementor wirklich kennt',

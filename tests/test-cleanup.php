@@ -1,9 +1,5 @@
 <?php
-/**
- * Tests für ASU_Cleanup, die Klasse, die endgültig löscht.
- *
- * @package AutoCleanupWP
- */
+// Tests fuer ASU_Cleanup, die Klasse, die endgueltig loescht.
 
 test(
 	'Inhalte: loescht alle Beitraege und Seiten, auch Auto-Entwuerfe und Papierkorb',

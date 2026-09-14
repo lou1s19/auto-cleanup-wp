@@ -1,16 +1,8 @@
 <?php
-/**
- * Tests für ASU_Plugin, den Ablauf, und für ASU_Result, das Protokoll.
- *
- * @package AutoCleanupWP
- */
+// Tests fuer ASU_Plugin, den Ablauf, und fuer ASU_Result, das Protokoll.
 
-/**
- * Ein einsatzbereites Plugin auf einer typischen frischen Installation.
- *
- * @return ASU_Plugin
- */
-function asu_test_plugin() {
+// Ein einsatzbereites Plugin auf einer typischen frischen Installation.
+function asu_test_plugin(): ASU_Plugin {
 	ASU_Fake_WP::add_post( 'post', 'publish' );
 	ASU_Fake_WP::add_post( 'page', 'draft' );
 

@@ -1,29 +1,11 @@
 <?php
-/**
- * Winziger Testläufer. Kein PHPUnit, weil das Plugin ohne Abhängigkeiten auskommt.
- *
- * @package AutoCleanupWP
- */
 
-/**
- * Eine fehlgeschlagene Zusicherung.
- */
 final class ASU_Assertion_Failed extends Exception {
 }
 
-/**
- * Zusicherungen.
- */
 final class Assert {
 
-	/**
-	 * @param mixed  $expected Erwarteter Wert.
-	 * @param mixed  $actual   Tatsächlicher Wert.
-	 * @param string $message  Was geprüft wird.
-	 * @return void
-	 * @throws ASU_Assertion_Failed Wenn die Werte nicht gleich sind.
-	 */
-	public static function same( $expected, $actual, $message ) {
+	public static function same( $expected, $actual, string $message ): void {
 		if ( $expected === $actual ) {
 			return;
 		}
@@ -33,34 +15,15 @@ final class Assert {
 		);
 	}
 
-	/**
-	 * @param mixed  $value   Wert.
-	 * @param string $message Was geprüft wird.
-	 * @return void
-	 * @throws ASU_Assertion_Failed Wenn der Wert nicht true ist.
-	 */
-	public static function true( $value, $message ) {
+	public static function true( $value, string $message ): void {
 		self::same( true, $value, $message );
 	}
 
-	/**
-	 * @param mixed  $value   Wert.
-	 * @param string $message Was geprüft wird.
-	 * @return void
-	 * @throws ASU_Assertion_Failed Wenn der Wert nicht false ist.
-	 */
-	public static function false( $value, $message ) {
+	public static function false( $value, string $message ): void {
 		self::same( false, $value, $message );
 	}
 
-	/**
-	 * @param mixed  $needle   Gesuchter Wert.
-	 * @param array  $haystack Liste.
-	 * @param string $message  Was geprüft wird.
-	 * @return void
-	 * @throws ASU_Assertion_Failed Wenn der Wert fehlt.
-	 */
-	public static function contains( $needle, array $haystack, $message ) {
+	public static function contains( $needle, array $haystack, string $message ): void {
 		if ( in_array( $needle, $haystack, true ) ) {
 			return;
 		}
@@ -70,31 +33,17 @@ final class Assert {
 		);
 	}
 
-	/**
-	 * @param mixed  $needle   Wert, der fehlen muss.
-	 * @param array  $haystack Liste.
-	 * @param string $message  Was geprüft wird.
-	 * @return void
-	 * @throws ASU_Assertion_Failed Wenn der Wert vorhanden ist.
-	 */
-	public static function missing( $needle, array $haystack, $message ) {
+	public static function missing( $needle, array $haystack, string $message ): void {
 		if ( ! in_array( $needle, $haystack, true ) ) {
 			return;
 		}
 
 		throw new ASU_Assertion_Failed(
-			sprintf( '%s%s  %s hätte nicht in der Liste sein dürfen: %s', $message, PHP_EOL, self::show( $needle ), self::show( $haystack ) )
+			sprintf( '%s%s  %s haette nicht in der Liste sein duerfen: %s', $message, PHP_EOL, self::show( $needle ), self::show( $haystack ) )
 		);
 	}
 
-	/**
-	 * @param string $needle   Teilzeichenkette.
-	 * @param string $haystack Text.
-	 * @param string $message  Was geprüft wird.
-	 * @return void
-	 * @throws ASU_Assertion_Failed Wenn der Text nicht vorkommt.
-	 */
-	public static function text_contains( $needle, $haystack, $message ) {
+	public static function text_contains( string $needle, $haystack, string $message ): void {
 		if ( false !== strpos( (string) $haystack, $needle ) ) {
 			return;
 		}
@@ -104,48 +53,30 @@ final class Assert {
 		);
 	}
 
-	/**
-	 * @param mixed $value Wert.
-	 * @return string
-	 */
-	private static function show( $value ) {
+	private static function show( $value ): string {
 		return str_replace( PHP_EOL, ' ', var_export( $value, true ) );
 	}
 }
 
-/**
- * Sammelt und startet die Tests.
- */
 final class ASU_Tests {
 
-	/** @var array<int, array{name: string, run: callable}> */
-	private static $tests = array();
+	private static array $tests = array();
 
-	/** @var array<int, string> */
-	private static $failures = array();
+	private static array $failures = array();
 
-	/** @var int */
-	private static $passed = 0;
+	private static int $passed = 0;
 
-	/**
-	 * @param string   $name Beschreibung des Tests.
-	 * @param callable $run  Der Test selbst.
-	 * @return void
-	 */
-	public static function add( $name, callable $run ) {
+	public static function add( string $name, callable $run ): void {
 		self::$tests[] = array(
 			'name' => $name,
 			'run'  => $run,
 		);
 	}
 
-	/**
-	 * Führt alle gesammelten Tests aus.
-	 *
-	 * @return int Exit-Code: 0, wenn alles grün ist.
-	 */
-	public static function run() {
+	public static function run(): int {
 		foreach ( self::$tests as $test ) {
+			// Jeder Test startet auf einer leeren Attrappe, sonst haengt das
+			// Ergebnis an der Reihenfolge.
 			ASU_Fake_WP::reset();
 
 			try {
@@ -178,13 +109,6 @@ final class ASU_Tests {
 	}
 }
 
-/**
- * Kurzschreibweise zum Anmelden eines Tests.
- *
- * @param string   $name Beschreibung.
- * @param callable $run  Der Test.
- * @return void
- */
-function test( $name, callable $run ) {
+function test( string $name, callable $run ): void {
 	ASU_Tests::add( $name, $run );
 }
