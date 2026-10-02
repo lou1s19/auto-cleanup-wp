@@ -87,6 +87,7 @@ test(
 		// Genau der Fall, der die Website weiss gemacht haette: Hello ist nicht
 		// installiert, also wird nicht umgeschaltet. Wird jetzt das Parent des
 		// aktiven Child-Themes geloescht, findet WordPress keine Templates mehr.
+		ASU_Fake_WP::$themes_api_returns = new WP_Error( 'offline', 'Keine Verbindung.' );
 		ASU_Fake_WP::add_theme( 'astra' );
 		ASU_Fake_WP::add_theme( 'astra-child', 'astra' );
 		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
@@ -218,6 +219,7 @@ test(
 	'Themes: ein fremdes Theme im Ordner "hello" wird nicht fuer Hello Elementor gehalten',
 	function () {
 		// Sonst waere darauf umgeschaltet und das echte aktive Theme geloescht worden.
+		ASU_Fake_WP::$themes_api_returns = new WP_Error( 'offline', 'Keine Verbindung.' );
 		ASU_Fake_WP::add_theme( 'hello', '', 'Hello World Blog' );
 		ASU_Fake_WP::add_theme( 'astra' );
 		ASU_Fake_WP::$options['stylesheet'] = 'astra';
@@ -264,5 +266,72 @@ test(
 		$cleanup->delete_all_posts_and_pages( $result );
 
 		Assert::same( array(), ASU_Fake_WP::$posts, 'Ein eigener Status darf nichts durchrutschen lassen.' );
+	}
+);
+
+test(
+	'Download: fehlt Hello Elementor, wird es geladen, aktiviert und der Rest geloescht',
+	function () {
+		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
+		ASU_Fake_WP::add_theme( 'twentytwentyfive' );
+		ASU_Fake_WP::$options['stylesheet'] = 'twentytwentyfour';
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( $result );
+
+		Assert::same( array( 'https://downloads.wordpress.org/theme/hello-elementor.zip' ), ASU_Fake_WP::$installed_packages, 'Geladen wird genau das Paket von wordpress.org.' );
+		Assert::same( 'hello-elementor', get_option( 'stylesheet' ), 'Das geladene Theme muss aktiv sein.' );
+		Assert::same( array( 'hello-elementor' ), array_keys( ASU_Fake_WP::$themes ), 'Nur Hello Elementor darf uebrig bleiben.' );
+		Assert::false( $result->has_failures(), 'Ein sauberer Lauf darf keinen Fehler melden.' );
+	}
+);
+
+test(
+	'Download: ist Hello Elementor schon da, wird nichts geladen',
+	function () {
+		ASU_Fake_WP::add_hello_elementor();
+		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
+		ASU_Fake_WP::$options['stylesheet'] = 'twentytwentyfour';
+
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( new ASU_Result() );
+
+		Assert::same( array(), ASU_Fake_WP::$installed_packages, 'Ein vorhandenes Theme wird nicht ueberschrieben.' );
+	}
+);
+
+test(
+	'Download: scheitert die Installation, bleibt jedes Theme stehen',
+	function () {
+		ASU_Fake_WP::add_theme( 'twentytwentyfour' );
+		ASU_Fake_WP::add_theme( 'twentytwentyfive' );
+		ASU_Fake_WP::$options['stylesheet']  = 'twentytwentyfour';
+		ASU_Fake_WP::$theme_install_returns = null;
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( $result );
+
+		Assert::same( 'twentytwentyfour', get_option( 'stylesheet' ), 'Ohne Hello wird nicht umgeschaltet.' );
+		Assert::true( isset( ASU_Fake_WP::$themes['twentytwentyfour'] ), 'Das aktive Theme bleibt.' );
+		Assert::true( $result->has_failures(), 'Der gescheiterte Download muss im Protokoll stehen.' );
+	}
+);
+
+test(
+	'Download: mit DISALLOW_FILE_MODS wird gar nicht erst geladen',
+	function () {
+		ASU_Fake_WP::add_theme( 'astra' );
+		ASU_Fake_WP::$options['stylesheet'] = 'astra';
+		ASU_Fake_WP::$file_mods_allowed     = false;
+
+		$result  = new ASU_Result();
+		$cleanup = new ASU_Cleanup();
+		$cleanup->remove_unused_themes( $result );
+
+		Assert::same( array(), ASU_Fake_WP::$installed_packages, 'Die Sperre des Betreibers gilt.' );
+		Assert::true( isset( ASU_Fake_WP::$themes['astra'] ), 'Das aktive Theme bleibt.' );
+		Assert::true( $result->has_failures(), 'Und der Grund steht im Protokoll.' );
 	}
 );

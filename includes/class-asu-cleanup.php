@@ -6,6 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class ASU_Cleanup {
 
+	const HELLO_SLUG = 'hello-elementor';
+
 	const KEEP_STYLESHEETS = array( 'hello-elementor', 'hello', 'hello-child', 'hello-elementor-child' );
 
 	const REMOVE_PLUGINS = array( 'hello.php', 'akismet/akismet.php' );
@@ -190,6 +192,10 @@ final class ASU_Cleanup {
 	private function switch_to_hello( ASU_Result $result ): bool {
 		$hello = $this->find_hello_stylesheet();
 
+		if ( '' === $hello && $this->install_hello( $result ) ) {
+			$hello = $this->find_hello_stylesheet();
+		}
+
 		if ( '' === $hello ) {
 			// Ohne Ziel wird nicht gewechselt. Das aktive Theme und sein Parent
 			// bleiben dann stehen, sonst wäre die Website nach dem Lauf weiss.
@@ -221,6 +227,68 @@ final class ASU_Cleanup {
 		}
 
 		$result->ok( 'theme-wechsel', sprintf( 'Auf %s umgeschaltet.', $hello ) );
+
+		return true;
+	}
+
+	private function install_hello( ASU_Result $result ): bool {
+		$this->load_installer_functions();
+
+		if ( ! function_exists( 'themes_api' ) || ! class_exists( 'Theme_Upgrader' ) || ! class_exists( 'WP_Ajax_Upgrader_Skin' ) ) {
+			$result->fail( 'theme-download', 'Die Installations-Funktionen von WordPress stehen nicht zur Verfügung.' );
+
+			return false;
+		}
+
+		// DISALLOW_FILE_MODS und Co. sind eine bewusste Entscheidung des Betreibers.
+		if ( ( function_exists( 'wp_is_file_mod_allowed' ) && ! wp_is_file_mod_allowed( 'auto_cleanup_install_theme' ) ) || ! current_user_can( 'install_themes' ) ) {
+			$result->fail( 'theme-download', 'Hello Elementor fehlt und darf hier nicht installiert werden.' );
+
+			return false;
+		}
+
+		$api = themes_api(
+			'theme_information',
+			array(
+				'slug'   => self::HELLO_SLUG,
+				'fields' => array( 'sections' => false ),
+			)
+		);
+
+		if ( $result->catch_wp_error( 'theme-download', $api, 'Hello Elementor auf wordpress.org abfragen' ) ) {
+			return false;
+		}
+
+		if ( ! is_object( $api ) || empty( $api->download_link ) ) {
+			$result->fail( 'theme-download', 'wordpress.org hat keinen Download für Hello Elementor geliefert.' );
+
+			return false;
+		}
+
+		// Die Ajax-Skin gibt nichts aus. Jede Ausgabe beim Aktivieren meldet
+		// WordPress sonst als "unerwartete Ausgabe".
+		$skin      = new WP_Ajax_Upgrader_Skin();
+		$upgrader  = new Theme_Upgrader( $skin );
+		$installed = $upgrader->install( $api->download_link );
+
+		if ( $result->catch_wp_error( 'theme-download', $installed, 'Hello Elementor installieren' ) ) {
+			return false;
+		}
+
+		// install() liefert null, wenn die Zugangsdaten fürs Dateisystem fehlen,
+		// und false bei anderen Fehlern. Den Grund kennt nur die Skin.
+		if ( true !== $installed ) {
+			$reasons = method_exists( $skin, 'get_error_messages' ) ? $skin->get_error_messages() : '';
+
+			$result->fail(
+				'theme-download',
+				trim( sprintf( 'Hello Elementor liess sich nicht installieren. %s', $reasons ) )
+			);
+
+			return false;
+		}
+
+		$result->ok( 'theme-download', 'Hello Elementor von wordpress.org installiert.' );
 
 		return true;
 	}
@@ -279,6 +347,16 @@ final class ASU_Cleanup {
 	private function load_theme_functions(): void {
 		$this->load_once( ABSPATH . 'wp-includes/theme.php', array( 'wp_get_themes', 'switch_theme' ) );
 		$this->load_once( ABSPATH . 'wp-admin/includes/theme.php', array( 'delete_theme' ) );
+	}
+
+	private function load_installer_functions(): void {
+		$this->load_once( ABSPATH . 'wp-admin/includes/file.php', array( 'download_url' ) );
+		$this->load_once( ABSPATH . 'wp-admin/includes/misc.php', array( 'insert_with_markers' ) );
+		$this->load_once( ABSPATH . 'wp-admin/includes/theme.php', array( 'themes_api' ) );
+
+		if ( ! class_exists( 'Theme_Upgrader' ) && file_exists( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		}
 	}
 
 	private function load_plugin_functions(): void {

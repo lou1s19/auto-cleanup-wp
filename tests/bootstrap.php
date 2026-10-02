@@ -60,6 +60,16 @@ final class ASU_Fake_WP {
 
 	public static array $extra_post_stati = array();
 
+	// Was themes_api() und Theme_Upgrader::install() liefern. 'installieren'
+	// legt Hello Elementor an, alles andere wird unveraendert zurueckgegeben.
+	public static $themes_api_returns = 'ok';
+
+	public static $theme_install_returns = 'installieren';
+
+	public static bool $file_mods_allowed = true;
+
+	public static array $installed_packages = array();
+
 	public static function reset(): void {
 		self::$options                = array();
 		self::$posts                  = array();
@@ -85,6 +95,10 @@ final class ASU_Fake_WP {
 		self::$undeletable_posts      = array();
 		self::$switch_theme_works     = true;
 		self::$extra_post_stati       = array();
+		self::$themes_api_returns     = 'ok';
+		self::$theme_install_returns  = 'installieren';
+		self::$file_mods_allowed      = true;
+		self::$installed_packages     = array();
 
 		$GLOBALS['wp_rewrite'] = new ASU_Fake_Rewrite();
 	}
@@ -320,6 +334,46 @@ function delete_theme( string $stylesheet ) {
 	ASU_Fake_WP::$deleted_themes[] = $stylesheet;
 
 	return true;
+}
+
+function themes_api( string $action, $args = array() ) {
+	if ( 'ok' !== ASU_Fake_WP::$themes_api_returns ) {
+		return ASU_Fake_WP::$themes_api_returns;
+	}
+
+	return (object) array(
+		'slug'          => $args['slug'],
+		'download_link' => 'https://downloads.wordpress.org/theme/' . $args['slug'] . '.zip',
+	);
+}
+
+function wp_is_file_mod_allowed( string $context ): bool {
+	return ASU_Fake_WP::$file_mods_allowed;
+}
+
+class WP_Ajax_Upgrader_Skin {
+
+	public function get_error_messages(): string {
+		return 'Zielordner existiert bereits.';
+	}
+}
+
+class Theme_Upgrader {
+
+	public function __construct( $skin = null ) {
+	}
+
+	public function install( string $package ) {
+		ASU_Fake_WP::$installed_packages[] = $package;
+
+		if ( 'installieren' !== ASU_Fake_WP::$theme_install_returns ) {
+			return ASU_Fake_WP::$theme_install_returns;
+		}
+
+		ASU_Fake_WP::add_hello_elementor();
+
+		return true;
+	}
 }
 
 function get_plugins(): array {
