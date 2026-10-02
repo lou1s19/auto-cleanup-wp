@@ -7,7 +7,7 @@ Neueste Einträge oben.
 Hello Elementor muss nicht mehr vorher installiert sein.
 
 - Fehlt Hello Elementor, lädt das Plugin es von wordpress.org, aktiviert es und löscht danach alle anderen Themes.
-- Scheitert der Download (offline, keine Schreibrechte, `DISALLOW_FILE_MODS`), wird kein Theme gelöscht und der Grund steht in der Meldung.
+- Scheitert der Download (offline, keine Schreibrechte, `DISALLOW_FILE_MODS`), wird kein Theme gelöscht und der Grund steht in der Meldung. Bisher wurden in dem Fall inaktive Themes trotzdem gelöscht.
 - Vier Tests dazu, per Sabotage gegengeprüft.
 
 ## 1.2.1 (2026-09-14)

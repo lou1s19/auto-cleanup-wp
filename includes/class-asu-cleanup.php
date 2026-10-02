@@ -197,14 +197,11 @@ final class ASU_Cleanup {
 		}
 
 		if ( '' === $hello ) {
-			// Ohne Ziel wird nicht gewechselt. Das aktive Theme und sein Parent
-			// bleiben dann stehen, sonst wäre die Website nach dem Lauf weiss.
-			$result->skip(
-				'theme-wechsel',
-				'Hello Elementor ist nicht installiert. Das aktive Theme und sein Parent bleiben stehen.'
-			);
+			// Ohne Hello wird weder gewechselt noch gelöscht. Die Website soll
+			// danach nicht ohne brauchbares Theme dastehen.
+			$result->fail( 'theme-wechsel', 'Hello Elementor ist nicht installiert.' );
 
-			return true;
+			return false;
 		}
 
 		if ( get_option( 'stylesheet' ) === $hello ) {

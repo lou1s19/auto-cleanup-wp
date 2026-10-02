@@ -99,7 +99,7 @@ test(
 
 		Assert::true( isset( ASU_Fake_WP::$themes['astra-child'] ), 'Das aktive Theme darf nie geloescht werden.' );
 		Assert::true( isset( ASU_Fake_WP::$themes['astra'] ), 'Das Parent des aktiven Themes darf nie geloescht werden.' );
-		Assert::false( isset( ASU_Fake_WP::$themes['twentytwentyfour'] ), 'Ein unbeteiligtes Theme darf trotzdem weg.' );
+		Assert::same( array(), ASU_Fake_WP::$deleted_themes, 'Ohne Hello wird gar kein Theme geloescht.' );
 	}
 );
 
@@ -314,7 +314,7 @@ test(
 		$cleanup->remove_unused_themes( $result );
 
 		Assert::same( 'twentytwentyfour', get_option( 'stylesheet' ), 'Ohne Hello wird nicht umgeschaltet.' );
-		Assert::true( isset( ASU_Fake_WP::$themes['twentytwentyfour'] ), 'Das aktive Theme bleibt.' );
+		Assert::same( array(), ASU_Fake_WP::$deleted_themes, 'Auch inaktive Themes bleiben stehen.' );
 		Assert::true( $result->has_failures(), 'Der gescheiterte Download muss im Protokoll stehen.' );
 	}
 );
@@ -331,7 +331,7 @@ test(
 		$cleanup->remove_unused_themes( $result );
 
 		Assert::same( array(), ASU_Fake_WP::$installed_packages, 'Die Sperre des Betreibers gilt.' );
-		Assert::true( isset( ASU_Fake_WP::$themes['astra'] ), 'Das aktive Theme bleibt.' );
+		Assert::same( array(), ASU_Fake_WP::$deleted_themes, 'Ohne Hello wird nichts geloescht.' );
 		Assert::true( $result->has_failures(), 'Und der Grund steht im Protokoll.' );
 	}
 );
