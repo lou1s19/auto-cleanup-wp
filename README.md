@@ -16,7 +16,7 @@ Beim Aktivieren, in dieser Reihenfolge:
 2. Legt eine leere Seite "Startseite" an und setzt sie als statische Startseite. Mit Elementor bekommt sie das Template "Elementor Full Width".
 3. Setzt die Permalinks auf `/%postname%/`.
 4. Blockiert Suchmaschinen. Vor dem Livegang wieder freigeben.
-5. Löscht alle Themes außer Hello Elementor, nach einem Wechsel auf Hello Elementor.
+5. Lädt Hello Elementor von wordpress.org, falls es fehlt, aktiviert es und löscht danach alle anderen Themes.
 6. Löscht Hello Dolly und Akismet.
 7. Aktiviert die Elementor Flexbox Container.
 
@@ -31,11 +31,11 @@ Das Plugin löscht nicht, wenn eine dieser Bedingungen zutrifft. Es verändert d
 - **Multisite.** Theme- und Plugin-Dateien gehören dort allen Sites gemeinsam.
 - **Mehr als 5 Beiträge und Seiten.** Das sieht nicht nach einer frischen Installation aus. Wer es trotzdem braucht, setzt `define( 'ASU_ALLOW_ON_EXISTING_SITE', true );` in die `wp-config.php`, nach einem vollständigen Backup.
 - **Zweiter Lauf.** Die Option `asu_setup_ran` bleibt dauerhaft stehen und verhindert, dass eine gewachsene Website Monate später versehentlich leergeräumt wird.
-- **Theme-Wechsel misslungen.** Dann wird kein einziges Theme gelöscht.
+- **Download oder Theme-Wechsel misslungen.** Dann wird kein einziges Theme gelöscht.
 
 ## Installation
 
-Voraussetzungen: WordPress 6.0, PHP 7.4, Hello Elementor und Elementor. Elementor muss vorher aktiv sein, sonst lassen sich die Container nicht einschalten.
+Voraussetzungen: WordPress 6.0, PHP 7.4 und Elementor. Hello Elementor holt sich das Plugin selbst, dafür braucht der Server Internet und Schreibrechte im Theme-Ordner. Elementor muss vorher aktiv sein, sonst lassen sich die Container nicht einschalten.
 
 1. Repository herunterladen, Ordner nach `/wp-content/plugins/` kopieren.
 2. Im Backend unter *Plugins* aktivieren.
